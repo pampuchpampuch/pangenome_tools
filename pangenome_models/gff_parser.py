@@ -1,8 +1,10 @@
 import os
 from Bio import SeqIO
-import warnings
 
 class Gff:
+    """
+    Represents gff file content
+    """
     def __init__(self, scaffolds, cds):
         genomes = set([scaff.genome for scaff in scaffolds])
         assert len(genomes)==1, f"Provided scaffolds belong to more than one genome. Genomes: {genomes}"
@@ -12,7 +14,7 @@ class Gff:
     
     def get_sequences(self):
         """
-        Returns a dictioanry Dict[genome.scaffold,cds]
+        Returns a dictionary Dict[genome.scaffold,cds]
         """
         sequences = {}
 
@@ -45,8 +47,11 @@ class GffCDS:
         self.scaffold = scaffold
         self.ID = annotation_id
         self.strand = strand
-        self.start = int(start)
-        self.end = int(end)
+        self.start = start
+        self.end = end
+    
+    def __len__(self):
+        return self.end - self.start + 1
 
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -67,12 +72,12 @@ def parse_gff(gff_path):
                 return Gff(list(scaffolds_dict.values()),CDS)            
             if line.startswith("##sequence-region"):
                 _, scaffold_name, _, scaffold_len = line.split()
-                scaffolds_dict[scaffold_name] = Scaffold(genome_name, scaffold_name, scaffold_len)
+                scaffolds_dict[scaffold_name] = Scaffold(genome_name, scaffold_name, int(scaffold_len))
 
             else:
                 scaffold_name, _, _, start, end, _, strand, _, gene_info, *_ =line.split()
                 annotation_id = gene_info.split(";")[0][3:]
 
-                CDS.append(GffCDS(scaffolds_dict[scaffold_name], annotation_id, strand_rep(strand), start, end))
+                CDS.append(GffCDS(scaffolds_dict[scaffold_name], annotation_id, strand_rep(strand), int(start), int(end)))
 
     return Gff(list(scaffolds_dict.values()),CDS)            
