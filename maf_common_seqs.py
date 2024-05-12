@@ -1,6 +1,6 @@
 import argparse
 import os
-from maf.maf_parser import parse_maf
+from pangenome_models.maf_parser import parse_maf
 
 def main():
     parser = argparse.ArgumentParser()

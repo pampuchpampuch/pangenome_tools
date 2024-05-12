@@ -1,10 +1,17 @@
 import os
 import argparse
 from Bio import SeqIO
+from maf_parser import MAFseq
 
 # keep strands as -1 and 1, because you can multiply strand from gff and aln to get the resulting strand orientation
 # you prob should not return dicts but lists and tranform them later
-# or pack those things in a class to - probably applicable for many methods
+# or pack those things in a class too - probably applicable for many methods
+
+class Panaroo_output:
+    """
+    Represents Panaroo output
+    """
+    pass
 
 class PanarooGene:
     def __init__(self, gff_file, scaffold_name, clustering_id, annotation_id):
@@ -28,29 +35,28 @@ class GffCDS:
         self.start = start
         self.end = end
 
+# class MAF_seq:
+#     '''
+#     Represents synteny block
+#     '''
+#     def __init__(self, chr_name, start, strand, chr_size, seq):
+#         self.seq_name = chr_name
+#         self.start = start
+#         self.seq_len = len(seq)
+#         self.strand = strand
+#         self.chr_size = chr_size
+#         self.seq = seq
 
-class MAF_seq:
-    '''
-    Represents synteny block
-    '''
-    def __init__(self, chr_name, start, strand, chr_size, seq):
-        self.seq_name = chr_name
-        self.start = start
-        self.seq_len = len(seq)
-        self.strand = strand
-        self.chr_size = chr_size
-        self.seq = seq
-
-    def MAF_repr(self):
-        '''
-        returns string representing seguence in MAF format
-        '''
+#     def MAF_repr(self):
+#         '''
+#         returns string representing seguence in MAF format
+#         '''
         
-        strand_sign = "+" if self.strand > 0 else "-"
+#         strand_sign = "+" if self.strand > 0 else "-"
 
-        s_line=f"s\t{self.seq_name}\t{self.start}\t{self.seq_len}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
+#         s_line=f"s\t{self.seq_name}\t{self.start}\t{self.seq_len}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
 
-        return(s_line)
+#         return(s_line)
 
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -73,7 +79,6 @@ def parse_gff(gff_path):
             if line.startswith("##sequence-region"):
                 _, scaffold_name, _, scaffold_len = line.split()
                 scaffolds_dict[genome_name+"."+scaffold_name] = Scaffold(genome_name, scaffold_name, scaffold_len)
-
             else:
                 scaffold_name, _, _, start, end, _, strand, _, gene_info, *_ =line.split()
                 annotation_id = gene_info.split(";")[0][3:]
@@ -122,7 +127,7 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
             else:
                 start = str(int(chr_size) - int(cds_info.end) + 1)
 
-            maf_seqs.append(MAF_seq(chr_name, start, strand, chr_size, seq.upper()))
+            maf_seqs.append(MAFseq(chr_name, start, strand, chr_size, seq.upper()))
         
         maf_out.write('a\n')
         for maf_seq in maf_seqs:

@@ -1,6 +1,6 @@
 import os
 import argparse
-from pangenome_models.stats import gff_cds_pct
+from analysis import gff_cds_pct
     
 def main():
     parser = argparse.ArgumentParser()
