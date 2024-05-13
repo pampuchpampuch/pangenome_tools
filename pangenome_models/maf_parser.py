@@ -112,12 +112,13 @@ class MAFseq:
         """
         Converts zero based, half-open coords (used in maf) to one-based, fully closed
         """
+        print(strand)
         if strand>0:
             one_start = start
             one_end = end-1
         else:
             one_start = chr_size - end + 1
-            one_end = chr_size - start + 1
+            one_end = chr_size - start
 
         return(one_start, one_end)
 
@@ -137,8 +138,9 @@ def parse_maf(maf_file, store_seqs=True):
                 if line.startswith("s"):
                     # print(line.split())
                     _, chr_name, start, seq_len, strand_sign, chr_size, seq = line.split()
-
-                    strand = 1 if strand_sign == "=" else -1
+                    
+                    print(strand_sign)
+                    strand = 1 if strand_sign == "+" else -1
                     start = int(start)
                     chr_size = int(chr_size)
                     end = start + int(seq_len)

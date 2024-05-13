@@ -159,6 +159,9 @@ def maf_cds_content(maf, gff_dir):
 
     for contig in maf_seqs_gff_coords:
         maf_coords = maf_seqs_gff_coords[contig]
+        for maf in maf_coords:
+            maf_start, maf_end = maf[0], maf[1]
+            sum_maf_lens += maf_end - maf_start + 1
 
         try:
             cds_coords = cds_seqs_coords[contig]
@@ -167,33 +170,40 @@ def maf_cds_content(maf, gff_dir):
 
         for maf in maf_coords:
             maf_start, maf_end = maf[0], maf[1]
-            sum_maf_lens += maf_end - maf_start + 1
+            # print("="*30)
+            # print(f"maf:{maf_start}-{maf_end}")
+
             first_cds_idx = None
             last_cds_idx = None
 
             for i, _cds_coords in enumerate(cds_coords):
                 cds_start, cds_end = _cds_coords[0], _cds_coords[1]
+                # print(f"cds:{cds_start}-{cds_end}")
+
 
                 # maf start earlier
                 # then cds has to start before maf ends
                 # or
                 # cds starts earlier
                 # then maf has to start before cds ends          
-                if ((cds_start >= maf_start and cds_start <= maf_end) or
+                if ((cds_start >= maf_start and cds_start < maf_end) or
                     (cds_start < maf_start and cds_end > maf_start)):
                     if not first_cds_idx:
-                        first_cds_idx = last_cds_idx = i
+                        first_cds_idx = i
+                        last_cds_idx = i
                     else:
                         last_cds_idx = i
 
-            if first_cds_idx:
+            if first_cds_idx != None:
                 common_area_cds = cds_coords[first_cds_idx:last_cds_idx+1]
+                # print(common_area_cds)
                 first_cds_start = common_area_cds[0][0]
                 last_cds_end = common_area_cds[-1][1]
-                area_start = first_cds_start if first_cds_start < maf_start else maf_start
+                area_start = first_cds_start if first_cds_start > maf_start else maf_start
                 area_end = last_cds_end if last_cds_end < maf_end else maf_end
-
+                # print(area_start,area_end)
                 if len(common_area_cds) == 1:
+                    # print(sum_maf_cds_lens)
                     sum_maf_cds_lens += area_end - area_start + 1
                 else:
                     # add area from first cds
@@ -206,6 +216,8 @@ def maf_cds_content(maf, gff_dir):
             else:
                 continue
 
+    # print("maf_lens",sum_maf_lens)
+    # print("cds_lens",sum_maf_cds_lens)
     results = {"%_cds_scaffolds": sum_cds_lens/sum_scaff_lens,
               "%_cds_in_maf": sum_maf_cds_lens/sum_maf_lens,
               "%_maf_cds_in_cds": sum_maf_cds_lens/sum_cds_lens,

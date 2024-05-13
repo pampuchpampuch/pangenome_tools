@@ -1,7 +1,7 @@
 import os
 import argparse
 from Bio import SeqIO
-from maf_parser import MAFseq
+# from maf_parser import MAFseq
 
 # keep strands as -1 and 1, because you can multiply strand from gff and aln to get the resulting strand orientation
 # you prob should not return dicts but lists and tranform them later
@@ -35,28 +35,28 @@ class GffCDS:
         self.start = start
         self.end = end
 
-# class MAF_seq:
-#     '''
-#     Represents synteny block
-#     '''
-#     def __init__(self, chr_name, start, strand, chr_size, seq):
-#         self.seq_name = chr_name
-#         self.start = start
-#         self.seq_len = len(seq)
-#         self.strand = strand
-#         self.chr_size = chr_size
-#         self.seq = seq
+class MAF_seq:
+    '''
+    Represents synteny block
+    '''
+    def __init__(self, chr_name, start, strand, chr_size, seq):
+        self.seq_name = chr_name
+        self.start = start
+        self.seq_len = len("".join(seq.split("-")))
+        self.strand = strand
+        self.chr_size = chr_size
+        self.seq = seq
 
-#     def MAF_repr(self):
-#         '''
-#         returns string representing seguence in MAF format
-#         '''
+    def MAF_repr(self):
+        '''
+        returns string representing seguence in MAF format
+        '''
         
-#         strand_sign = "+" if self.strand > 0 else "-"
+        strand_sign = "+" if self.strand > 0 else "-"
 
-#         s_line=f"s\t{self.seq_name}\t{self.start}\t{self.seq_len}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
+        s_line=f"s\t{self.seq_name}\t{self.start}\t{self.seq_len}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
 
-#         return(s_line)
+        return(s_line)
 
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -78,12 +78,12 @@ def parse_gff(gff_path):
             
             if line.startswith("##sequence-region"):
                 _, scaffold_name, _, scaffold_len = line.split()
-                scaffolds_dict[genome_name+"."+scaffold_name] = Scaffold(genome_name, scaffold_name, scaffold_len)
+                scaffolds_dict[genome_name+"."+scaffold_name] = Scaffold(genome_name, scaffold_name, int(scaffold_len))
             else:
                 scaffold_name, _, _, start, end, _, strand, _, gene_info, *_ =line.split()
                 annotation_id = gene_info.split(";")[0][3:]
 
-                CDS_dict[annotation_id] = GffCDS(scaffolds_dict[genome_name+"."+scaffold_name], annotation_id, strand_rep(strand), start, end)
+                CDS_dict[annotation_id] = GffCDS(scaffolds_dict[genome_name+"."+scaffold_name], annotation_id, strand_rep(strand), int(start), int(end))
 
     return scaffolds_dict, CDS_dict
 
@@ -106,7 +106,8 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
             seq_name, clustering_id = record.id.split(";")
             seq = record.seq
 
-            if seq_name[:2] == "_R_":
+            if seq_name[:3] == "_R_":
+                print("R")
                 strand = -1
                 seq_name = seq_name[3:]
             else:
@@ -120,14 +121,23 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
                 continue
             chr_name = gene_info.chr_name
             chr_size = cds_info.scaffold.length
+
+            print(cds_info.strand,strand)
+
             strand = cds_info.strand * strand
-
-            if strand>0:
-                start = cds_info.start              
+            if strand > 0:
+                start = cds_info.start
+                end = cds_info.end          
             else:
-                start = str(int(chr_size) - int(cds_info.end) + 1)
+                start = chr_size - cds_info.end
+                end = chr_size - cds_info.start + 1
 
-            maf_seqs.append(MAFseq(chr_name, start, strand, chr_size, seq.upper()))
+            if cds_info.start != start:
+                print(chr_size)
+            print(f"cds: {cds_info.start}-{cds_info.end}")
+            print(f"maf: {start}-{end}")
+
+            maf_seqs.append(MAF_seq(chr_name, start, strand, chr_size, str(seq.upper())))
         
         maf_out.write('a\n')
         for maf_seq in maf_seqs:
@@ -137,7 +147,7 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("panaroo_dir",
-                        help="path to dir with panaroo_output")
+                        help="path to dir with panaroo output")
     parser.add_argument("gff_dir",
                         help="path to dir with gff files used to generate panaroo output")
     parser.add_argument("maf_out",
