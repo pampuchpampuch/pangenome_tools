@@ -8,15 +8,19 @@ def parse_maf_comp(file_name, dataset = None):
     Parses mafComparator output
 
     Parameters:
-        file_name: output of mafComparator
-    
+        file_name: str
+            output of mafComparator
+
+        dataset: str
+            descriptor defining where the data comes from
+        
     Returns:
         csv_line: list
             contains recall and precission reported in mafComparator output
     """
     if not dataset: dataset = file_name
     lines = open(file_name).readlines()
-    csv_line =[dir]
+    csv_line =[dataset]
     for i in range(len(lines)):
         if lines[i].strip().startswith("<homologyTests fileA"):
             csv_line.append(str(round(float(lines[i+2].split()[-1].split('"')[1]),4)))
