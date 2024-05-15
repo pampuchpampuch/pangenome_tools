@@ -2,9 +2,9 @@ import argparse
 import sys
 
 class MAF:
-    '''
+    """
     represents a synteny file as a set of synteny blocks
-    '''
+    """
     def __init__(self, synteny_blocks):
         self.synteny_blocks = synteny_blocks
         chr_names = []
@@ -47,10 +47,10 @@ class MAF:
         return sequences
 
 class SyntenyBlock:
-    '''
+    """
     represents synteny block as a set of sequences with an id
     from coords file
-    '''
+    """
 
     def __init__(self, block_seqs, aligned=False):
         # consider adding id?
@@ -61,9 +61,9 @@ class SyntenyBlock:
         self.block_seqs.append(block_seq)
 
     def MAF_repr(self, chr_names = None):
-        '''
+        """
         return a string representing block in MAF format
-        '''
+        """
         if self.aligned:
 
             maf_str = "a\n"
@@ -85,9 +85,9 @@ class SyntenyBlock:
         return maf_str
 
 class MAFseq:
-    '''
+    """
     Represents sequence in maf block
-    '''
+    """
     def __init__(self, chr_name, start, end, strand, chr_size, seq):
         self.seq_name = chr_name
         self.start = start
@@ -101,9 +101,9 @@ class MAFseq:
         return (self.end - self.start)
     
     def MAF_repr(self):
-        '''
+        """
         returns string representing seguence in MAF format
-        '''
+        """
         
         strand_sign = "+" if self.strand > 0 else "-"
 
