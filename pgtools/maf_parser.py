@@ -15,11 +15,15 @@ class MAF:
     def add_synteny_block(self, syn_block):
         self.synteny_blocks.append(syn_block)
 
-    def write_to_file(self, out_file, chr_names='all'):
+    def write_to_file(self, out_file, chr_names=None):
+        """
+        Writes MAF object into a maf file. Filtering on sequence names
+        is possible
+        """
         out_file = open(out_file,"w")
         out_file.write("##maf version=1 scoring=N/A\n\n")
 
-        if chr_names=='all':
+        if not chr_names:
             for block in self.synteny_blocks:
                 out_file.write(block.MAF_repr())
         
@@ -123,7 +127,14 @@ class MAFseq:
         return(one_start, one_end)
 
 def parse_maf(maf_file, store_seqs=True):
-
+    """
+    Parses maf file and return MAF object.
+    Possible to not store sequences (as they
+    are not needed for all applications to conserve memory)
+    """
+    ### TO DO ##
+    # possiblity to input compressed (.gz) maf files
+    ############
     synteny_blocks = []
     block = False
     block_seqs = []
@@ -160,14 +171,3 @@ def parse_maf(maf_file, store_seqs=True):
                 synteny_blocks.append(SyntenyBlock(block_seqs, aligned=store_seqs))
 
     return MAF(synteny_blocks)
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("maf",
-                        help="path to maf file")
-    
-    args = parser.parse_args()
-
-
-if __name__ == "__main__":
-    main()

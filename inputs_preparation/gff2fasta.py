@@ -1,6 +1,9 @@
 import argparse
 
 def gff2fasta(gff, fasta):
+    """
+    Writes fasta based on gff file
+    """
     fasta = open(fasta,"w")
     fasta_part = False
     with open(gff) as f:
@@ -11,7 +14,6 @@ def gff2fasta(gff, fasta):
             if line.startswith(">"):
                 fasta_part=True
                 fasta.write(line)
-
 
 def main():
     parser = argparse.ArgumentParser()

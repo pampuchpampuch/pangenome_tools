@@ -1,6 +1,6 @@
 import os
 import argparse
-from analysis import gff_cds_pct
+from pgtools.analysis import gff_cds_pct
     
 def main():
     parser = argparse.ArgumentParser()

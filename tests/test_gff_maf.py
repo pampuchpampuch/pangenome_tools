@@ -1,8 +1,8 @@
 import argparse
 import os
-from pangenome_models import maf_parser
-from pangenome_models import gff_parser
-import analysis
+from pgtools import maf_parser
+from pgtools import gff_parser
+from pgtools import analysis
 
 def maf_cds_content(maf, gff_dir):
     """
@@ -102,7 +102,7 @@ def maf_cds_content(maf, gff_dir):
                     # add area from last cds
                     sum_maf_cds_lens += area_end - common_area_cds[-1][0] + 1
                     # add area for middle cds
-                    for coords in common_area_cds[1:-2]:
+                    for coords in common_area_cds[1:-1]:
                         sum_maf_cds_lens += coords[1] - coords[0] + 1
             else:
                 continue
