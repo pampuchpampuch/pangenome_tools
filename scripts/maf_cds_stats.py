@@ -1,7 +1,7 @@
 import argparse
 import os
-from pangenome_models import maf_parser
-from pangenome_models import gff_parser
+from pgtools import maf_parser
+from pgtools import gff_parser
 
 def main():
     parser = argparse.ArgumentParser()

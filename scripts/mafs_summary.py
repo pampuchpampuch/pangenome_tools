@@ -1,6 +1,6 @@
 import argparse
 import os
-import analysis
+from pgtools import analysis
     
 def main():
     parser = argparse.ArgumentParser(description="Summarizes maf files statistics.\

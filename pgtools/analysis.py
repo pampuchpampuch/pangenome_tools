@@ -1,12 +1,20 @@
 import argparse
 import os
-from pangenome_models import maf_parser
-from pangenome_models import gff_parser
+from .maf_parser import parse_maf
+from .gff_parser import parse_gff
 
-def parse_maf_comp(dir,file_name):
+def parse_maf_comp(file_name, dataset = None):
     """
     Parses mafComparator output
+
+    Parameters:
+        file_name: output of mafComparator
+    
+    Returns:
+        csv_line: list
+            contains recall and precission reported in mafComparator output
     """
+    if not dataset: dataset = file_name
     lines = open(file_name).readlines()
     csv_line =[dir]
     for i in range(len(lines)):
@@ -35,11 +43,11 @@ def maf_comp_summary(maf_comp_dir, out_csv):
             csv_line=",".join(parse_maf_comp(dataset, f_path))+"\n"
             csv_file.write(csv_line)
 
-def parse_maf_stats(file_path, dataset):
+def parse_maf_stats(file_path, dataset=None):
     """
     Parses mafStats output
     """
-    # file = os.path.join(dir,file_name)
+    if not dataset: dataset = file_path    
     lines = open(file_path).readlines()
     maf_source = lines[0].split('.')[0].split('_')[0]
     maf_stats = ["char_n", "gap_n", "columns_n",
@@ -126,8 +134,9 @@ def maf_cds_content(maf, gff_dir):
     Returns: Dict[str, int]
             dictionary with basic length info for maf and cds sequences
     """
-    maf = maf_parser.parse_maf(maf, store_seqs=False)
-    gffs = [gff_parser.parse_gff(os.path.join(gff_dir,filename)) for filename in os.listdir(gff_dir)]
+    # maf = maf_parser.parse_maf(maf, store_seqs=False)
+    maf = parse_maf(maf, store_seqs=False)
+    gffs = [parse_gff(os.path.join(gff_dir,filename)) for filename in os.listdir(gff_dir)]
 
     sum_scaff_lens = 0
     sum_cds_lens = 0
@@ -211,18 +220,18 @@ def maf_cds_content(maf, gff_dir):
                     # add area from last cds
                     sum_maf_cds_lens += area_end - common_area_cds[-1][0] + 1
                     # add area for middle cds
-                    for coords in common_area_cds[1:-2]:
+                    for coords in common_area_cds[1:-1]:
                         sum_maf_cds_lens += coords[1] - coords[0] + 1
             else:
                 continue
 
     # print("maf_lens",sum_maf_lens)
     # print("cds_lens",sum_maf_cds_lens)
-    results = {"%_cds_scaffolds": sum_cds_lens/sum_scaff_lens,
-              "%_cds_in_maf": sum_maf_cds_lens/sum_maf_lens,
-              "%_maf_cds_in_cds": sum_maf_cds_lens/sum_cds_lens,
+    results = {"%_cds_scaffolds": (sum_cds_lens * 100) / sum_scaff_lens,
+              "%_cds_in_maf": (sum_maf_cds_lens * 100) / sum_maf_lens,
+              "%_maf_cds_in_cds": (sum_maf_cds_lens * 100) / sum_cds_lens,
               }
-    results = {k:round(v,4) for k,v in results.items()}
+    results = {k:round(v,2) for k,v in results.items()}
 
     return results
 

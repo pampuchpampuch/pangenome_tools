@@ -60,6 +60,17 @@ def strand_rep(strand_sign):
         return -1
 
 def parse_gff(gff_path):
+    """
+    Parses gff file
+
+    Parameters:
+        gff_path: str
+            path to the gff file
+    
+    Returns:
+        Gff
+        Object containing information on scaffolds and annotations in gff file
+    """
     scaffolds_dict = {}
     CDS = []
 

@@ -1,11 +1,12 @@
-#dir with fasta files to pggb input - one fasta with all sequences with headers prepended with "[filename]."
-
 import argparse
 import os
 from Bio import SeqIO
 
-def concatenate_fastas(fasta_dir, out_dir, out_filename):
-
+def concatenate_fastas(fasta_dir, out_filename, out_dir=""):
+    """
+    Concatenates fastas in fasta dir into one fasta file
+    that is written to out_dir directory
+    """
     if not os.path.exists(out_dir): os.makedirs(out_dir)
 
     out_file_path = os.path.join(out_dir, out_filename)
@@ -22,7 +23,9 @@ def concatenate_fastas(fasta_dir, out_dir, out_filename):
     out_file.close()    
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description = "dir with fasta files to pggb input.\
+                                     Writes one fasta with all sequences with headers prepended with '[filename]' based on dir with fasta files"
+)
     parser.add_argument("fasta_dir",
                         help="path to dir with fasta files")
     parser.add_argument("outdir",
