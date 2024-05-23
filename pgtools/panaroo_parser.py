@@ -1,8 +1,8 @@
 import os
 import argparse
 from Bio import SeqIO
-from .maf_parser import MAFseq
-from .gff_parser import GffCDS, Scaffold
+from pgtools.maf_parser import MAFseq
+from pgtools.gff_parser import GffCDS, Scaffold
 
 ### TO DO ####
 # 1. Object that keeps panaroo genes with information about start and end
@@ -99,7 +99,7 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
             try:
                 cds_info = gff_dict[gene_info.annotation_id]
             except:
-                print(f"Sequence with annotation id {gene_info.annotation_id} from alignment file {aln_file} not found in gff files, ommiting the sequence from block")
+                # print(f"Sequence with annotation id {gene_info.annotation_id} from alignment file {aln_file} not found in gff files, ommiting the sequence from block")
                 continue
             chr_name = gene_info.chr_name
             chr_size = cds_info.scaffold.length
@@ -112,14 +112,24 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
                 end = cds_info.end          
             else:
                 start = chr_size - cds_info.end
-                end = chr_size - cds_info.start + 1
+                end = chr_size - cds_info.start
 
             # if cds_info.start != start:
                 # print(chr_size)
             # print(f"cds: {cds_info.start}-{cds_info.end}")
             # print(f"maf: {start}-{end}")
+            maf_seq = MAFseq(chr_name, start, end, strand, chr_size, str(seq.upper()))
+            seq_no_gaps = "".join(maf_seq.seq.split("-"))
+            msg = f"{maf_seq.start}:{maf_seq.end},{cds_info.start}:{cds_info.end}, {len(cds_info)}, {len(maf_seq)}, {len(seq_no_gaps)}"
+            assert len(maf_seq)==len(cds_info)==len(seq_no_gaps), print(msg)
 
-            maf_seqs.append(MAFseq(chr_name, start, strand, chr_size, str(seq.upper())))
+            # print(maf_seq.start,maf_seq.end)
+            # print(maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand))
+            # print(cds_info.start, cds_info.end)
+            maf_s, maf_e = maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand)
+            assert maf_s == cds_info.start and maf_e == cds_info.end, print(maf_s, cds_info.start)
+            
+            maf_seqs.append(maf_seq)
         
         maf_out.write('a\n')
         for maf_seq in maf_seqs:

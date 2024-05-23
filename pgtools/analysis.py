@@ -162,7 +162,7 @@ def maf_cds_content(maf, gff_dir):
 
     maf_seqs_gff_coords = {}
     for genome, seqs in maf_sequences.items():
-        maf_seqs_gff_coords[genome] = sorted([seq.one_based_coords(seq.start, seq.end, seq.chr_size, seq.strand)
+        maf_seqs_gff_coords[genome] = sorted([seq.gff_coords(seq.start, seq.end, seq.chr_size, seq.strand)
                                        for seq in seqs], key = lambda x: (x[0], x[1]))
 
     # find, how long are the fragments in maf sequences that are in the cds fragments
@@ -183,15 +183,21 @@ def maf_cds_content(maf, gff_dir):
 
         for maf in maf_coords:
             maf_start, maf_end = maf[0], maf[1]
-            # print("="*30)
-            # print(f"maf:{maf_start}-{maf_end}")
 
             first_cds_idx = None
             last_cds_idx = None
 
+            # flag = maf in cds_coords
+
+            # if not flag:
+            #     print(contig)
             for i, _cds_coords in enumerate(cds_coords):
                 cds_start, cds_end = _cds_coords[0], _cds_coords[1]
-                # print(f"cds:{cds_start}-{cds_end}")
+                
+                if maf_start == cds_start:
+                    print(f"cds:{cds_start}-{cds_end}")
+                # if not flag:
+                    # print(f"cds:{cds_start}-{cds_end}")
 
 
                 # maf start earlier
@@ -199,9 +205,9 @@ def maf_cds_content(maf, gff_dir):
                 # or
                 # cds starts earlier
                 # then maf has to start before cds ends          
-                if ((cds_start >= maf_start and cds_start < maf_end) or
-                    (cds_start < maf_start and cds_end > maf_start)):
-                    if not first_cds_idx:
+                if ((cds_start >= maf_start and cds_start <= maf_end) or
+                    (cds_start < maf_start and cds_end >= maf_start)):
+                    if first_cds_idx == None:
                         first_cds_idx = i
                         last_cds_idx = i
                     else:
@@ -217,15 +223,15 @@ def maf_cds_content(maf, gff_dir):
                 # print(area_start,area_end)
                 if len(common_area_cds) == 1:
                     # print(sum_maf_cds_lens)
-                    sum_maf_cds_lens += area_end - area_start + 1
+                    sum_maf_cds_lens += area_end - area_start
                 else:
                     # add area from first cds
-                    sum_maf_cds_lens += common_area_cds[0][1] - area_start + 1
+                    sum_maf_cds_lens += common_area_cds[0][1] - area_start
                     # add area from last cds
-                    sum_maf_cds_lens += area_end - common_area_cds[-1][0] + 1
+                    sum_maf_cds_lens += area_end - common_area_cds[-1][0]
                     # add area for middle cds
                     for coords in common_area_cds[1:-1]:
-                        sum_maf_cds_lens += coords[1] - coords[0] + 1
+                        sum_maf_cds_lens += coords[1] - coords[0]
             else:
                 continue
 

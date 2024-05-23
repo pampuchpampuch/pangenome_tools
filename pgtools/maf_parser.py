@@ -1,5 +1,6 @@
 import argparse
 import sys
+from itertools import combinations
 
 class MAF:
     """
@@ -45,6 +46,21 @@ class MAF:
                 else:
                     sequences[seq.seq_name].append(seq)
         return sequences
+    
+    def identity_pct(self):
+        """
+        Calculates identity for each pair of sequence in each block.
+        Does not distinguish between them
+        """
+        n_gaps = 0
+        n_cols = 0
+
+        for block in self.synteny_blocks:
+            n_gaps_, n_cols_ = block.count_gapped_cols()
+            n_gaps += n_gaps_
+            n_cols += n_cols_
+        
+        return round((n_cols - n_gaps) * 100 / n_cols, 2)
 
 class SyntenyBlock:
     """
@@ -83,6 +99,20 @@ class SyntenyBlock:
             sys.exit("MAF block alignment to be implemented")
         
         return maf_str
+    
+    def count_gapped_cols(self):
+        assert self.aligned
+        seq_idx = [i for i in range(len(self.block_seqs))]
+        seqs = [maf_seq.seq for maf_seq in self.block_seqs]
+
+        n_cols = 0
+        n_gaps = 0
+        for idx_1, idx_2 in combinations(seq_idx, 2):
+            n_gaps_, n_cols_ = MAFseq.count_gapped_cols(seqs[idx_1], seqs[idx_2])
+            n_cols += n_cols_
+            n_gaps += n_gaps_
+        
+        return n_gaps, n_cols
 
 class MAFseq:
     """
@@ -98,7 +128,7 @@ class MAFseq:
         self.seq = seq
 
     def __len__(self):
-        return (self.end - self.start)
+        return (self.end - self.start + 1)
     
     def MAF_repr(self):
         """
@@ -110,21 +140,40 @@ class MAFseq:
         s_line=f"s\t{self.seq_name}\t{self.start}\t{len(self)}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
 
         return(s_line)
+    
+    @staticmethod
+    def count_gapped_cols(seq1, seq2):
+        """
+        Count number of columns where at list one sequence
+        has a gap character. Provided sequences have to be aligned.
+        """
+        assert len(seq1) == len(seq2)
+
+        n_gaps = 0
+        n_cols = len(seq1)
+        for i in range(len(seq1)):
+            if seq1[i] == "-" or seq2[i] == "-":
+                n_gaps +=1
+            
+        return n_gaps, n_cols
 
     @staticmethod
-    def one_based_coords(start, end, chr_size, strand):
+    def gff_coords(start, end, chr_size, strand):
         """
+        For now, converts to gff compatible coords
         Converts zero based, half-open coords (used in maf) to one-based, fully closed
         """
-        print(strand)
+        # print(strand)
         if strand>0:
             one_start = start
-            one_end = end-1
+            one_end = end
         else:
-            one_start = chr_size - end + 1
+            one_start = chr_size - end
             one_end = chr_size - start
 
         return(one_start, one_end)
+    
+
 
 def parse_maf(maf_file, store_seqs=True):
     """
@@ -150,11 +199,11 @@ def parse_maf(maf_file, store_seqs=True):
                     # print(line.split())
                     _, chr_name, start, seq_len, strand_sign, chr_size, seq = line.split()
                     
-                    print(strand_sign)
+                    # print(strand_sign)
                     strand = 1 if strand_sign == "+" else -1
                     start = int(start)
                     chr_size = int(chr_size)
-                    end = start + int(seq_len)
+                    end = start + int(seq_len) - 1
 
                     if not store_seqs: seq = None
                     block_seqs.append(MAFseq(chr_name, start, end, strand, chr_size, seq))
