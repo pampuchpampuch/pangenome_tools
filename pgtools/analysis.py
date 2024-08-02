@@ -8,15 +8,19 @@ def parse_maf_comp(file_name, dataset = None):
     Parses mafComparator output
 
     Parameters:
-        file_name: output of mafComparator
-    
+        file_name: str
+            output of mafComparator
+
+        dataset: str
+            descriptor defining where the data comes from
+        
     Returns:
         csv_line: list
             contains recall and precission reported in mafComparator output
     """
-    if not dataset: dataset = file_name
+    if not dataset: dataset = file_name.split("/")[-1].split(".")[0]
     lines = open(file_name).readlines()
-    csv_line =[dir]
+    csv_line =[dataset]
     for i in range(len(lines)):
         if lines[i].strip().startswith("<homologyTests fileA"):
             csv_line.append(str(round(float(lines[i+2].split()[-1].split('"')[1]),4)))
@@ -38,9 +42,11 @@ def maf_comp_summary(maf_comp_dir, out_csv):
     for dataset in os.listdir(maf_comp_dir):
         for f in os.listdir(os.path.join(maf_comp_dir, dataset)):
             #file names have to follow strict naming convention
-            if not f.endswith("mafComp.xml"): continue
+            # if not f.endswith("mafComp.xml"): continue
+            if not f.endswith("comp.xml"): continue
             f_path = os.path.join(maf_comp_dir, dataset, f)
-            csv_line=",".join(parse_maf_comp(dataset, f_path))+"\n"
+            print(f_path)
+            csv_line=",".join(parse_maf_comp(f_path, dataset))+"\n"
             csv_file.write(csv_line)
 
 def parse_maf_stats(file_path, dataset=None):
@@ -65,6 +71,8 @@ def parse_maf_stats(file_path, dataset=None):
     for i in range(len(maf_stats)):
         stats_dict[maf_stats[i]] = float(stats[i])
     stats_dict["gap_pct"] = round(stats_dict["gap_n"] / (stats_dict["gap_n"] + stats_dict["char_n"]), 2)
+    stats_dict["blocks_n"] = int(stats_dict["blocks_n"])
+    stats_dict["total_area"] = int(stats_dict["total_area"])
 
     return stats_dict
 
@@ -73,10 +81,12 @@ def maf_stats_summary(maf_stats_dir, out_csv):
     Summarizes mafStats ouput
     """
     csv_file = open(out_csv,"w")
-    col_names = "dataset,maf_source,gap_pct,blocks_n,total_area,avg_degree,max_degree,avg_seq,max_seq,n_seq"
+    # col_names = "dataset,maf_source,gap_pct,blocks_n,total_area,avg_degree,max_degree,avg_seq,max_seq,n_seq"
+    col_names = "dataset,maf_source,gap_pct,blocks_n,total_area,avg_degree,avg_seq"
     csv_file.write(col_names + "\n")
 
-    for dataset in os.listdir(maf_stats_dir):
+    for dataset in sorted(os.listdir(maf_stats_dir)):
+        print(dataset)
         for f in os.listdir(os.path.join(maf_stats_dir, dataset)):
             #file names have to follow strict naming convention
             if not f.endswith("stats.txt"): continue
@@ -158,7 +168,7 @@ def maf_cds_content(maf, gff_dir):
 
     maf_seqs_gff_coords = {}
     for genome, seqs in maf_sequences.items():
-        maf_seqs_gff_coords[genome] = sorted([seq.one_based_coords(seq.start, seq.end, seq.chr_size, seq.strand)
+        maf_seqs_gff_coords[genome] = sorted([seq.gff_coords(seq.start, seq.end, seq.chr_size, seq.strand)
                                        for seq in seqs], key = lambda x: (x[0], x[1]))
 
     # find, how long are the fragments in maf sequences that are in the cds fragments
@@ -179,15 +189,21 @@ def maf_cds_content(maf, gff_dir):
 
         for maf in maf_coords:
             maf_start, maf_end = maf[0], maf[1]
-            # print("="*30)
-            # print(f"maf:{maf_start}-{maf_end}")
 
             first_cds_idx = None
             last_cds_idx = None
 
+            # flag = maf in cds_coords
+
+            # if not flag:
+            #     print(contig)
             for i, _cds_coords in enumerate(cds_coords):
                 cds_start, cds_end = _cds_coords[0], _cds_coords[1]
-                # print(f"cds:{cds_start}-{cds_end}")
+                
+                if maf_start == cds_start:
+                    print(f"cds:{cds_start}-{cds_end}")
+                # if not flag:
+                    # print(f"cds:{cds_start}-{cds_end}")
 
 
                 # maf start earlier
@@ -195,9 +211,9 @@ def maf_cds_content(maf, gff_dir):
                 # or
                 # cds starts earlier
                 # then maf has to start before cds ends          
-                if ((cds_start >= maf_start and cds_start < maf_end) or
-                    (cds_start < maf_start and cds_end > maf_start)):
-                    if not first_cds_idx:
+                if ((cds_start >= maf_start and cds_start <= maf_end) or
+                    (cds_start < maf_start and cds_end >= maf_start)):
+                    if first_cds_idx == None:
                         first_cds_idx = i
                         last_cds_idx = i
                     else:
@@ -213,15 +229,15 @@ def maf_cds_content(maf, gff_dir):
                 # print(area_start,area_end)
                 if len(common_area_cds) == 1:
                     # print(sum_maf_cds_lens)
-                    sum_maf_cds_lens += area_end - area_start + 1
+                    sum_maf_cds_lens += area_end - area_start
                 else:
                     # add area from first cds
-                    sum_maf_cds_lens += common_area_cds[0][1] - area_start + 1
+                    sum_maf_cds_lens += common_area_cds[0][1] - area_start
                     # add area from last cds
-                    sum_maf_cds_lens += area_end - common_area_cds[-1][0] + 1
+                    sum_maf_cds_lens += area_end - common_area_cds[-1][0]
                     # add area for middle cds
                     for coords in common_area_cds[1:-1]:
-                        sum_maf_cds_lens += coords[1] - coords[0] + 1
+                        sum_maf_cds_lens += coords[1] - coords[0]
             else:
                 continue
 
@@ -250,6 +266,7 @@ def maf_cds_summary(maf_dir, gffs_dir, out_csv):
             gff_dir = os.path.join(gffs_dir,dataset,"gff")
             maf_path = os.path.join(maf_dir,dataset,f)
             cds_stats = maf_cds_content(maf_path, gff_dir)
+            print(cds_stats)
             maf_source = f.split("_")[0]
             stats = ",".join([str(stat) for stat in cds_stats.values()])
             csv_line = f"{dataset},{maf_source},{stats}\n"

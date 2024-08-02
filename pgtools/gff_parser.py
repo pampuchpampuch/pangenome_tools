@@ -34,6 +34,14 @@ class Gff:
         # ===TO DO======
         # check, if for the same genomes there are no conflicting cds and scaffold
         # ==============
+    
+    def to_MAF():
+        """
+        Writes cds into maf format
+        Each seq is one block - does not make sense (no real MSA)
+        but useful for filtering
+        """
+        
 
 
 class Scaffold:
