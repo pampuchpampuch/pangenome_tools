@@ -2,6 +2,8 @@ import argparse
 import sys
 from itertools import combinations, product
 
+from pgtools.utils import reverse_coords
+
 class MAF:
     """
     represents a synteny file as a set of synteny blocks
@@ -46,8 +48,8 @@ class MAF:
                 else:
                     sequences[seq.seq_name].append(seq)
         return sequences
-    
-    def get_filtered_blocks_by_strand(self, contig_names):
+            
+    def get_filtered_blocks_by_strand(self, contig_names, symmetrical_invert = False):
         """
         filteres blocks by contig names and categorizes them by strandness
         """
@@ -69,6 +71,22 @@ class MAF:
 
             maf_blocks[dict_key].append(tuple(coords))
         
+        if symmetrical_invert:
+            assert len(contig_names) == 2, "Symmetrcial invert (considering +- and -+\
+            simultaniously is possible only for filtering with two sequences)"
+            for strandness, coords in maf_blocks.items():
+                opposite_strandness = ""
+                for el in strandness:
+                    if el == "+":
+                        opposite_strandness += "-"
+                    else:
+                        opposite_strandness += "+"
+
+                rev_coords = [(reverse_coords(coords_[0])[:2], reverse_coords(coords_[1])[:2]) for coords_ in coords]
+                for coords_1, coords_2 in coords:
+                    rev_coords_1 = reverse_coords(coords_1[0], coords_1[1], 1)[:2]
+
+
         return maf_blocks
     
     def identity_pct(self):
@@ -182,6 +200,7 @@ class MAFseq:
         s_line=f"s\t{self.seq_name}\t{self.start}\t{len(self)}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
 
         return(s_line)
+            
     
     @staticmethod
     def count_mismatch_cols(seq1, seq2):

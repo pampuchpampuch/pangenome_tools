@@ -1,7 +1,7 @@
 import argparse
 from tqdm import tqdm
 from itertools import combinations
-from pgtools import gfa_parser
+from pgtools import gfa_impr
 from pgtools import maf_parser
 
 def intersection_len(s1_coords, s2_coords):
@@ -69,13 +69,13 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.9):
     return contained_lens, all_lens
     # return contained_lens, not_contained_lens
 
-def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
+def coocuring_contigs(gfa: gfa_impr.SimpleVertices, maf: maf_parser.MAF):
     maf_contigs = set()
-    for block in tqdm(list(maf.synteny_blocks)):
+    for block in tqdm(list(maf.synteny_blocks)[:500]):
         maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_contig_names()), 2)))
     # print("maf_contigs", maf_contigs)
     gfa_contigs = set()
-    for V in tqdm(list(gfa.seq_collections.values())):
+    for V in tqdm(list(gfa.seq_collections.values())[:10000]):
         gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.seq_dict.keys()),2))))
     inter_contigs = maf_contigs.intersection(gfa_contigs)
     return inter_contigs
@@ -96,12 +96,12 @@ def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
 def gfa_vs_maf(gfa, maf, csv_out):
     csv_file = open(csv_out, "w+")
     csv_file.write("contig_1, contig_2, frequency\n")
-    gfa = gfa_parser.parse_gfa1(gfa)
+    gfa = gfa_impr.parse_gfa1(gfa)
     maf = maf_parser.parse_maf(maf, store_seqs=False)
     common_contig_pairs = coocuring_contigs(gfa, maf)
     # maf_contigs = set(maf.chr_names)
     # gfa_contigs = set()
-    # for V in gfa.vertices.values():
+    # for V in gfa.seq_collections.values():
     #     for genome in V.seq_dict.keys():
     #         gfa_contigs.add(genome)
     # all_contig_names = maf_contigs.intersection(gfa_contigs)

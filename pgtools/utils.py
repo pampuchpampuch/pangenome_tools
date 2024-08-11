@@ -6,3 +6,4 @@ def reverse_coords(start: int, end: int, chr_len: int, strand: int):
     rev_end = chr_len - start + 1
     return (rev_start, rev_end, -1 * strand)
 
+### 
