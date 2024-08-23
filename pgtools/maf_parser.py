@@ -1,22 +1,25 @@
 import argparse
 import sys
 from itertools import combinations, product
+from pgtools.pangenome import BaseSeq, SeqCollection, Pangenome
 
 from pgtools.utils import reverse_coords
 
-class MAF:
+class MAF(Pangenome):
     """
     represents a synteny file as a set of synteny blocks
     """
     def __init__(self, synteny_blocks):
-        self.synteny_blocks = synteny_blocks
+        super().__init__(synteny_blocks)
+        # self.synteny_blocks = synteny_blocks
         chr_names = []
         for syn_block in synteny_blocks:
             chr_names += [maf_seq.seq_name for maf_seq in syn_block.block_seqs]
         self.chr_names = list(set(chr_names))
     
     def add_synteny_block(self, syn_block):
-        self.synteny_blocks.append(syn_block)
+        self.seq_collections[syn_block.id] = syn_block
+        # self.synteny_blocks.append(syn_block)
 
     def write_to_file(self, out_file, chr_names=None):
         """
@@ -114,23 +117,29 @@ class MAF:
                               if chr_names.issubset({seq.seq_name for seq in block.block_seqs})]
         return(MAF(filtered_blocks))
 
-class SyntenyBlock:
+class SyntenyBlock(SeqCollection):
     """
     represents synteny block as a set of sequences with an id
     from coords file
     """
 
     def __init__(self, block_seqs, aligned=False, id=None):
+        super().__init__(id, {seq.seq_name: seq for seq in block_seqs})
         # consider adding id?
         self.id = id
-        self.block_seqs = block_seqs
+        # self.block_seqs = block_seqs
         self.aligned = aligned
+    
+    def get_block_seqs(self):
+        return list(self.seq_dict.values())
 
     def add_block_seq(self,block_seq):
-        self.block_seqs.append(block_seq)
+        # self.block_seqs.append(block_seq)
+        self.seq_dict[block_seq.seq_name] = block_seq
     
     def get_contig_names(self):
-        return {seq.seq_name for seq in self.block_seqs}
+        return set(self.seq_dict.keys())
+        # return {seq.seq_name for seq in self.block_seqs}
 
     def MAF_repr(self, chr_names = None):
         """
@@ -141,12 +150,12 @@ class SyntenyBlock:
             maf_str = "a\n"
 
             if chr_names:
-                for maf_seq in self.block_seqs:
+                for maf_seq in self.seq_dict.values():
                     if maf_seq.seq_name in chr_names:
                         maf_str += maf_seq.MAF_repr() 
 
             else:
-                for maf_seq in self.block_seqs:
+                for maf_seq in self.seq_dict.values():
                     maf_str += maf_seq.MAF_repr() 
 
             maf_str += '\n'       
@@ -157,13 +166,13 @@ class SyntenyBlock:
         return maf_str
     
     def filter(self, seq_names):
-        seqs = [seq for seq in self.block_seqs if seq.seq_name in seq_names]
+        seqs = [seq for seq in self.seq_dict.values() if seq.seq_name in seq_names]
         return SyntenyBlock(seqs, id = self.id)
     
     def count_mismatch_cols(self):
         assert self.aligned
-        seq_idx = [i for i in range(len(self.block_seqs))]
-        seqs = [maf_seq.seq for maf_seq in self.block_seqs]
+        seq_idx = [i for i in range(len(self.seq_dict.values()))]
+        seqs = [maf_seq.seq for maf_seq in self.seq_dict.values()]
 
         n_cols = 0
         n_gaps = 0
@@ -174,16 +183,17 @@ class SyntenyBlock:
         
         return n_gaps, n_cols
 
-class MAFseq:
+class MAFseq(BaseSeq):
     """
     Represents sequence in maf block
     """
     def __init__(self, chr_name, start, end, strand, chr_size, seq):
-        self.seq_name = chr_name
-        self.start = start
-        self.end = end
-        #self.seq_len = int(end) - int(start)
-        self.strand = strand
+        super().__init__(chr_name, start, end, strand)
+        # self.seq_name = chr_name
+        # self.start = start
+        # self.end = end
+        # #self.seq_len = int(end) - int(start)
+        # self.strand = strand
         self.chr_size = chr_size
         self.seq = seq
 

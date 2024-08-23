@@ -86,14 +86,14 @@ def parse_gfa1(gfa_file):
         seq_dict = {}
         for seq in block:
             strand = 1 if seq[-1] == "+" else -1
-            seq_dict[seq[0]] = SimpleSeq(seq[0], seq[1], seq[1] + length - 1, strand)
+            seq_dict[seq[0]] = SimpleSeq(seq[0], seq[1], seq[1] + length - 1, strand, srcSizes[seq[0]])
         gfa_v.append(GfaVertex(id, length, seq_dict))  
 
     return SimpleVertices(gfa_v)            
 
 class SimpleSeq(BaseSeq):
-    def __init__(self, genome, start, end, strand):
-        super().__init__(genome, start, end, strand)
+    def __init__(self, genome, start, end, strand, src_size):
+        super().__init__(genome, start, end, strand, src_size)
         # self.genome = genome
         # self.start = start
         # self.end = end

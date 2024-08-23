@@ -1,42 +1,60 @@
 import os
 import argparse
+import networkx as nx
 from Bio import SeqIO
+import typing
 from pgtools.maf_parser import MAFseq
 from pgtools.gff_parser import GffCDS, Scaffold
+from pgtools.pangenome import BaseSeq, SeqCollection, Pangenome
 
 ### TO DO ####
 # 1. Object that keeps panaroo genes with information about start and end
 # 2. Parse panaroo into a class, then tranform it into MAF object
 #    - design class for panaroo output
-#    - redesign class for PanarooGene
+#    - redesign class for PanarooCsvInfo
 # 3. Parse more of panaroo output
 ##############
-
-class Panaroo:
+class PanarooCsvInfo(BaseSeq):
     """
-    Represents Panaroo output
+    Represent gene information defined in gene_data.csv in panaroo output
     """
-    pass
-
-class PanarooGene:
-    """
-    Represent gene as defined in panaroo model (gene_data.csv in panaroo output)
-    """
-    def __init__(self, gff_file, scaffold_name, clustering_id, annotation_id, seq = None):
+    def __init__(self, gff_file, scaffold_name, clustering_id, annotation_id, refound_coords=None, refound_strand=None, seq = None):
         self.gff_file = gff_file
         self.scaffold_name = scaffold_name
         self.chr_name = gff_file + "." + scaffold_name
         self.clustering_id = clustering_id
         self.annotation_id = annotation_id
+        # if refound strand is none - gene is not refound (part of panaroo algorithm
+        # detects ommited annotations)
+        self.refound_strand = refound_strand
+        self.refound_coords = refound_coords
         self.seq = seq
 
-class PanarooCluster:
+class PanarooGene(BaseSeq):
+    """
+    Represent gene as defined in panaroo model (gene_data.csv and other files in panaroo output)
+    """
+
+    def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, is_refound: bool, annotation_id: str, seq: str = None, in_format="panaroo"):
+        super().__init__(seq_name, start, end, strand, src_size, seq = seq, in_format = in_format)
+        self.refound: bool = is_refound
+        self.annotation_id: str = annotation_id    
+        self.seq = seq
+
+class PanarooCluster(SeqCollection):
     """
     Represents panaroo cluster based on 
     """
-    def __init__(self, cluster_name, genesm ):
-        self.name = cluster_name
-        self.genes = genes
+    # def __init__(self, cluster_name, genes):
+    #     self.name = cluster_name
+    #     self.genes = genes
+
+    # def __init__(self, id: int, cluster_name, seq_dict):
+    #     # seq_dict = {seq.seq_name: seq for seq in genes}
+    #     super().__init__(id, seq_dict)
+    def __init__(self, id: int, seq_list: list[BaseSeq], cluster_name: str):
+        super().__init__(id, seq_list)
+        self.cluster_name: str = cluster_name
 
     def add_alignment(self, fasta):
         """
@@ -48,6 +66,14 @@ class PanarooCluster:
     def MAF_repr(self):
         pass
 
+class Panaroo(Pangenome):
+    """
+    Represents Panaroo output
+    """
+    def __init__(self, seqs_collections: list[PanarooCluster], graph_structure: nx.Graph):
+        super().__init__(seqs_collections)
+        self.graph: nx.Graph = graph_structure
+    
 def strand_rep(strand_sign):
     if strand_sign == "+":
         return 1
@@ -61,7 +87,6 @@ def parse_gff(gff_path):
     """
     scaffolds_dict = {}
     CDS_dict = {}
-
     with open(gff_path) as f:
         next(f)
         genome_name = gff_path.split("/")[-1][:-4]
@@ -91,12 +116,124 @@ def parse_gene_data(gene_data_path):
         next(f)
         for line in f:
             if line:
-                gff_file, scaffold_name, clustering_id, annotation_id, *_ = line.split(",")
-                genes_dict[clustering_id] = PanarooGene(gff_file, scaffold_name, clustering_id, annotation_id)
-    
+                # gff_file, scaffold_name, clustering_id, annotation_id, _, _, _, description, additional_info = line.split(",")
+                line_items = line.split(",")
+                gff_file, scaffold_name, clustering_id, annotation_id, _, seq, *_ = line.split(",")
+                
+                refound_coords = None
+                refound_strand = None
+                if clustering_id.split("_")[1] == "refound":
+                    description, additional_info = line_items[-1].split(";")
+                    refound_coords = tuple(map(lambda x: int(x), description[len("location:"):].split("-")))
+                    refound_strand = strand_rep(additional_info[len("strand:")])
+                genes_dict[clustering_id] = PanarooCsvInfo(gff_file, scaffold_name, clustering_id, annotation_id, refound_coords, refound_strand, seq=seq)
+
     return genes_dict
 
-def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
+def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], cluster_id: int, include_refound = True) -> PanarooCluster:
+    """
+    Parses one Panaroo cluster (based on output files
+    in the panaroo aligned_gene_sequences)
+    """
+    panaroo_genes = []
+    with open(aln_file) as handle:
+        for record in SeqIO.parse(handle, "fasta"):
+            seq_name, clustering_id = record.id.split(";")
+            seq = record.seq
+
+            if seq_name[:3] == "_R_":
+                # print("R")
+                strand = -1
+                seq_name = seq_name[3:]
+            else:
+                strand = 1
+
+            gene_info  = genes_dict[clustering_id]
+            # try:
+            #     cds_info = gff_dict[gene_info.annotation_id]
+            # except:
+            #     # print(f"Sequence with annotation id {gene_info.annotation_id} from alignment file {aln_file} not found in gff files, ommiting the sequence from block")
+            #     continue
+
+            is_refound = False
+            if gene_info.refound_strand and include_refound:
+                ###  HOW TO GET CONTIG SIZE
+                is_refound = True
+                chr_name = gene_info.gff_file + "." + gene_info.scaffold_name
+                chr_size = scaffolds_dict[chr_name].length
+                start, end = gene_info.refound_coords
+                # refound coord system is not in agreement with other coords in panaroo
+                # is zero based and if strand is "-", coords are given for rev strand
+                strand = gene_info.refound_strand * strand
+                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
+
+            else:
+                cds_info = gff_dict[gene_info.annotation_id]   
+                chr_name = gene_info.chr_name
+                chr_size = cds_info.scaffold.length
+                strand = cds_info.strand * strand
+                start = cds_info.start
+                end = cds_info.end
+                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
+            # if strand > 0:
+            #     start = start - 1
+            #     end = end          
+            # else:
+            #     start = chr_size - end
+            #     end = chr_size - start + 1
+
+            # if cds_info.start != start:
+                # print(chr_size)
+            # print(f"cds: {cds_info.start}-{cds_info.end}")
+            # print(f"maf: {start}-{end}")
+            
+            # seq_no_gaps = "".join(panaroo_gene.seq.split("-"))
+            # msg = f"{panaroo_gene.start}:{panaroo_gene.end},{cds_info.start}:{cds_info.end}, {len(cds_info)}, {len(panaroo_gene)}, {len(seq_no_gaps)}"
+            # assert len(panaroo_gene)==len(cds_info)==len(seq_no_gaps), print(msg)
+
+            # # print(panaroo_gene.start,panaroo_gene.end)
+            # # print(panaroo_gene.gff_coords(panaroo_gene.start, panaroo_gene.end, panaroo_gene.chr_size, panaroo_gene.strand))
+            # # print(cds_info.start, cds_info.end)
+            # maf_s, maf_e = panaroo_gene.gff_coords(panaroo_gene.start, panaroo_gene.end, panaroo_gene.chr_size, panaroo_gene.strand)
+            # assert maf_s == cds_info.start and maf_e == cds_info.end, print(maf_s, cds_info.start)
+                
+            # panaroo_genes.append(panaroo_gene)
+        # maf_out.write('a\n')
+        # for maf_seq in maf_seqs:
+        #     maf_out.write(maf_seq.MAF_repr())
+        # maf_out.write('\n')
+        return PanarooCluster(cluster_id, panaroo_genes, cluster_name = aln_file.split("/")[-1].split(".")[0])
+
+def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True) -> Panaroo:
+    """
+    Parses panaroo output
+    """
+    gff_dict = {}
+    scaffolds_dict = {}
+    for filename in os.listdir(gffs_dir):
+        scaff_dict_, gff_dict_ = parse_gff(os.path.join(gffs_dir,filename))
+        gff_dict.update(gff_dict_)
+        scaffolds_dict.update(scaff_dict_)
+
+    gene_data_dir = os.path.join(panaroo_dir, "gene_data.csv")
+
+    genes_dict = parse_gene_data(gene_data_dir)
+
+    aln_files_dir = os.path.join(panaroo_dir, "aligned_gene_sequences")
+
+    panaroo_clusters = []
+
+    clust_id = 0
+    for aln_file in os.listdir(aln_files_dir):
+        aln_file = os.path.join(aln_files_dir,aln_file)
+        pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound)
+        panaroo_clusters.append(pan_clust)
+        clust_id += 1
+    
+    G = nx.read_gml(os.path.join(panaroo_dir, "final_graph.gml"))
+    return Panaroo(panaroo_clusters, G)
+
+def panaroo_aln_to_maf(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], maf_out: str, include_refound = True):
     """
     Writes maf block based on one Panaroo cluster (based on output files
     in the panaroo aligned_gene_sequences)
@@ -115,39 +252,57 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
                 strand = 1
 
             gene_info  = genes_dict[clustering_id]
-            try:
-                cds_info = gff_dict[gene_info.annotation_id]
-            except:
-                # print(f"Sequence with annotation id {gene_info.annotation_id} from alignment file {aln_file} not found in gff files, ommiting the sequence from block")
-                continue
-            chr_name = gene_info.chr_name
-            chr_size = cds_info.scaffold.length
+            # try:
+            #     cds_info = gff_dict[gene_info.annotation_id]
+            # except:
+            #     # print(f"Sequence with annotation id {gene_info.annotation_id} from alignment file {aln_file} not found in gff files, ommiting the sequence from block")
+            #     continue
+            if gene_info.refound_strand and include_refound:
+                ###  HOW TO GET CONTIG SIZE
+                chr_name = gene_info.gff_file + "." + gene_info.scaffold_name
+                chr_size = scaffolds_dict[chr_name].length
+                start, end = gene_info.refound_coords
+                strand = gene_info.refound_strand
 
-            # print(cds_info.strand,strand)
+                if strand > 0:
+                    start = cds_info.start - 1
+                    end = cds_info.end          
+                else:
+                    start = chr_size - cds_info.end
+                    end = chr_size - cds_info.start + 1
 
-            strand = cds_info.strand * strand
-            if strand > 0:
-                start = cds_info.start
-                end = cds_info.end          
+                maf_seq = MAFseq(chr_name, start, end, strand, chr_size, str(seq.upper()))
+
             else:
-                start = chr_size - cds_info.end
-                end = chr_size - cds_info.start
+                cds_info = gff_dict[gene_info.annotation_id]   
+                chr_name = gene_info.chr_name
+                chr_size = cds_info.scaffold.length
 
-            # if cds_info.start != start:
-                # print(chr_size)
-            # print(f"cds: {cds_info.start}-{cds_info.end}")
-            # print(f"maf: {start}-{end}")
-            maf_seq = MAFseq(chr_name, start, end, strand, chr_size, str(seq.upper()))
-            seq_no_gaps = "".join(maf_seq.seq.split("-"))
-            msg = f"{maf_seq.start}:{maf_seq.end},{cds_info.start}:{cds_info.end}, {len(cds_info)}, {len(maf_seq)}, {len(seq_no_gaps)}"
-            assert len(maf_seq)==len(cds_info)==len(seq_no_gaps), print(msg)
+                # print(cds_info.strand,strand)
 
-            # print(maf_seq.start,maf_seq.end)
-            # print(maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand))
-            # print(cds_info.start, cds_info.end)
-            maf_s, maf_e = maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand)
-            assert maf_s == cds_info.start and maf_e == cds_info.end, print(maf_s, cds_info.start)
-            
+                strand = cds_info.strand * strand
+                if strand > 0:
+                    start = cds_info.start - 1
+                    end = cds_info.end          
+                else:
+                    start = chr_size - cds_info.end
+                    end = chr_size - cds_info.start + 1
+
+                # if cds_info.start != start:
+                    # print(chr_size)
+                # print(f"cds: {cds_info.start}-{cds_info.end}")
+                # print(f"maf: {start}-{end}")
+                maf_seq = MAFseq(chr_name, start, end, strand, chr_size, str(seq.upper()))
+                seq_no_gaps = "".join(maf_seq.seq.split("-"))
+                msg = f"{maf_seq.start}:{maf_seq.end},{cds_info.start}:{cds_info.end}, {len(cds_info)}, {len(maf_seq)}, {len(seq_no_gaps)}"
+                assert len(maf_seq)==len(cds_info)==len(seq_no_gaps), print(msg)
+
+                # print(maf_seq.start,maf_seq.end)
+                # print(maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand))
+                # print(cds_info.start, cds_info.end)
+                maf_s, maf_e = maf_seq.gff_coords(maf_seq.start, maf_seq.end, maf_seq.chr_size, maf_seq.strand)
+                assert maf_s == cds_info.start and maf_e == cds_info.end, print(maf_s, cds_info.start)
+                
             maf_seqs.append(maf_seq)
         
         maf_out.write('a\n')
@@ -155,7 +310,7 @@ def panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out):
             maf_out.write(maf_seq.MAF_repr())
         maf_out.write('\n')
 
-def parse_panaroo_output(panaroo_dir, gff_dir, maf_out):
+def panaroo_output_to_maf(panaroo_dir, gff_dir, maf_out):
     """
     Writes maf file based on panaroo output
     """
@@ -173,9 +328,6 @@ def parse_panaroo_output(panaroo_dir, gff_dir, maf_out):
         panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out)
 
     maf_out.close()
-
-def get_vertices():
-    pass
 
 def main():
     parser = argparse.ArgumentParser()
