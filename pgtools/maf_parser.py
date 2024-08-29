@@ -14,7 +14,7 @@ class MAF(Pangenome):
         # self.synteny_blocks = synteny_blocks
         chr_names = []
         for syn_block in synteny_blocks:
-            chr_names += [maf_seq.seq_name for maf_seq in syn_block.block_seqs]
+            chr_names += [maf_seq.seq_name for maf_seq in syn_block.sequences]
         self.chr_names = list(set(chr_names))
     
     def add_synteny_block(self, syn_block):
@@ -124,7 +124,7 @@ class SyntenyBlock(SeqCollection):
     """
 
     def __init__(self, block_seqs, aligned=False, id=None):
-        super().__init__(id, {seq.seq_name: seq for seq in block_seqs})
+        super().__init__(id, block_seqs)
         # consider adding id?
         self.id = id
         # self.block_seqs = block_seqs
@@ -137,8 +137,8 @@ class SyntenyBlock(SeqCollection):
         # self.block_seqs.append(block_seq)
         self.seq_dict[block_seq.seq_name] = block_seq
     
-    def get_contig_names(self):
-        return set(self.seq_dict.keys())
+    # def get_contig_names(self):
+    #     return set(self.seq_dict.keys())
         # return {seq.seq_name for seq in self.block_seqs}
 
     def MAF_repr(self, chr_names = None):
@@ -187,15 +187,17 @@ class MAFseq(BaseSeq):
     """
     Represents sequence in maf block
     """
-    def __init__(self, chr_name, start, end, strand, chr_size, seq):
-        super().__init__(chr_name, start, end, strand)
-        # self.seq_name = chr_name
-        # self.start = start
-        # self.end = end
-        # #self.seq_len = int(end) - int(start)
-        # self.strand = strand
-        self.chr_size = chr_size
-        self.seq = seq
+    def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, in_format="maf", seq: str = None, coord_system="maf"):
+        super().__init__(seq_name, start, end, strand, src_size, in_format, seq, coord_system)
+    # def __init__(self, chr_name, start, end, strand, chr_size, seq):
+    #     super().__init__(chr_name, start, end, strand)
+    #     # self.seq_name = chr_name
+    #     # self.start = start
+    #     # self.end = end
+    #     # #self.seq_len = int(end) - int(start)
+    #     # self.strand = strand
+    #     self.chr_size = chr_size
+    #     self.seq = seq
 
     def __len__(self):
         return (self.end - self.start + 1)
@@ -282,7 +284,7 @@ def parse_maf(maf_file, store_seqs=True):
                     end = start + int(seq_len) - 1
 
                     if not store_seqs: seq = None
-                    block_seqs.append(MAFseq(chr_name, start, end, strand, chr_size, seq))
+                    block_seqs.append(MAFseq(chr_name, start, end, strand, chr_size, in_format="maf", seq=seq))
                     # print(block_seqs)
                 else:
                     if len(block_seqs) > 1:

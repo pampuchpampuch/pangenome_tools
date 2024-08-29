@@ -1,5 +1,5 @@
 from itertools import product
-
+import typing
 from pgtools.pangenome import BaseSeq, SeqCollection, Pangenome
 
 class S_line:
@@ -86,14 +86,14 @@ def parse_gfa1(gfa_file):
         seq_dict = {}
         for seq in block:
             strand = 1 if seq[-1] == "+" else -1
-            seq_dict[seq[0]] = SimpleSeq(seq[0], seq[1], seq[1] + length - 1, strand, srcSizes[seq[0]])
-        gfa_v.append(GfaVertex(id, length, seq_dict))  
+            seq_dict[seq[0]] = SimpleSeq(seq[0], seq[1], seq[1] + length - 1, strand, srcSizes[seq[0]], in_format="gfa")
+        gfa_v.append(GfaVertex(id, length, list(seq_dict.values())))  
 
     return SimpleVertices(gfa_v)            
 
 class SimpleSeq(BaseSeq):
-    def __init__(self, genome, start, end, strand, src_size):
-        super().__init__(genome, start, end, strand, src_size)
+    def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, in_format, seq: str = None, coord_system="maf"):
+        super().__init__(seq_name, start, end, strand, src_size, in_format, seq, coord_system)
         # self.genome = genome
         # self.start = start
         # self.end = end

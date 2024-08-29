@@ -166,7 +166,10 @@ class Pangenome:
                 filtered_collections.append(C.filter(seq_names))
         return Pangenome(filtered_collections)
 
-    def get_filtered_vertices_by_strand(self,seq_names):
+    def get_filtered_vertices_by_strand(self, seq_names, symmetrical_invert=False):
+        """"
+        vertex - seq collection
+        """
         # collections_dict = self.get_seq_collections_dict()
         filtered_collections = {"".join(strand_comb): [] for strand_comb in product(["+","-"], repeat=len(seq_names))}
         for V in self.seq_collections:
@@ -182,9 +185,20 @@ class Pangenome:
                     dict_key += "+"
                 else:
                     dict_key += "-"
-
             filtered_collections[dict_key].append(tuple(coords))
-        
+                            
+            if symmetrical_invert:
+                dict_key = ""
+                coords = []
+                for seq_name_ in seq_names:
+                    seq = seq_dict[seq_name_]
+                    coords.append(seq.invert_coords())
+                    if seq.strand > 0:
+                        dict_key += "-"
+                    else:
+                        dict_key += "+"
+                filtered_collections[dict_key].append(tuple(coords))      
+
         return filtered_collections
     
     def convert_coords_system(self, in_format: str, out_format: str):

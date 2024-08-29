@@ -71,12 +71,12 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.9):
 
 def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
     maf_contigs = set()
-    for block in tqdm(list(maf.synteny_blocks)):
-        maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_contig_names()), 2)))
+    for block in tqdm(list(maf.seq_collections)[:100]):
+        maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_sequence_names()), 2)))
     # print("maf_contigs", maf_contigs)
     gfa_contigs = set()
-    for V in tqdm(list(gfa.seq_collections.values())):
-        gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.seq_dict.keys()),2))))
+    for V in tqdm(list(gfa.seq_collections)[:200]):
+        gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.get_sequence_names()),2))))
     inter_contigs = maf_contigs.intersection(gfa_contigs)
     return inter_contigs
 
@@ -94,7 +94,8 @@ def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
 #     print(maf_blocks)
 
 def gfa_vs_maf(gfa, maf, csv_out):
-    csv_file = open(csv_out, "w+")
+    # print(csv_out)
+    csv_file = open(csv_out, "w")
     csv_file.write("contig_1, contig_2, frequency\n")
     gfa = gfa_parser.parse_gfa1(gfa)
     maf = maf_parser.parse_maf(maf, store_seqs=False)
@@ -110,13 +111,15 @@ def gfa_vs_maf(gfa, maf, csv_out):
     contig_pairs = common_contig_pairs
 
     for contig_pair in contig_pairs:
-        gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair)
-        maf_blocks = maf.get_filtered_blocks_by_strand(contig_pair)
+        print(contig_pair)
+        gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=True)
+        maf_blocks = maf.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=True)
         contained_lens, all_lens = vertices_freq(maf_blocks, gfa_verticles)
         if not contained_lens:
             freq = 0
         else: 
             freq = sum(contained_lens)/sum(all_lens)
+        print("==================")
         # print(not_contained_lens)
         # if contained_lens:
         csv_file.write(f"{contig_pair[0]}, {contig_pair[1]}, {freq}\n")
