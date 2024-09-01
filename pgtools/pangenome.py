@@ -101,7 +101,7 @@ class SeqCollection:
         self.core: bool = None
 
     def is_core(self, threshold: int) -> bool:
-        return len(self.genome_names) >= threshold
+        return len(self.get_genome_names()) >= threshold
     
     def set_core(self, threshold: int):
         self.core = self.is_core(threshold)
