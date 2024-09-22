@@ -21,7 +21,27 @@ class Scaffold:
     
     def set_seq(self, seq: str):
         self.seq = seq
+
+class simple_Gff:
+    def __init__(self, genome, scaffolds, CDSs):
+        self.genome = genome
+        scaffolds_coords = {scaff.name: set() for scaff in scaffolds}
+        # assumes that in the same scaffold there are no cds with the same coords
+        # as it is unlikely and allows for storing them in a set
+        for cds in CDSs:
+            scaffolds_coords[cds.scaffold.name].add((cds.start, cds.end, cds.strand, cds.ID))
+        self.scaffolds_coords = scaffolds_coords
+
+class pangenome_GFFs:
+    def __init__(self, simple_gffs):
+        genome_gff = {}
+        for gff in simple_gffs:
+            genome_gff[gff.genome] = gff.scaffolds_coords
+        self.simple_gffs = genome_gff
     
+    def add_gff(self, simple_gff):
+        self.simple_gffs[simple_gff.genome] = simple_gff.scaffolds_coords
+
 class Gff:
     """
     Represents gff file content
@@ -79,6 +99,7 @@ class Gff:
         Each seq is one block - does not make sense (no real MSA)
         but useful for filtering
         """
+        
 
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -138,3 +159,20 @@ def parse_gff(gff_path, store_sequences=False):
     if sequence:
         scaffolds_dict[fasta_id].seq = sequence
     return Gff(list(scaffolds_dict.values()),CDS)            
+
+def parse_GFFs_dir(GFFs_dir, gff_simple = True):
+    """
+    parses al gff files in a given directory
+    """
+    all_gff = {}
+    for f in os.listdir(GFFs_dir):
+        if f.endswith(".gff"):
+            gff_obj = parse_gff(os.path.join(GFFs_dir, f))
+            if gff_simple:
+                all_gff[gff_obj.genome] = simple_Gff(gff_obj.genome, gff_obj.scaffolds, gff_obj.cds)
+            else:
+                all_gff[gff_obj.genome] = gff_obj
+    if gff_simple:
+        return pangenome_GFFs(all_gff.values())
+    return all_gff
+

@@ -82,6 +82,8 @@ for gene_type in test_seqs:
             print("="*30)
         # print("="*30)
 
+print("test seqs END")
+
 all_refound = []
 for seq_col in panaroo_obj.seq_collections:
     for gene in seq_col.sequences:
@@ -116,6 +118,7 @@ for gene in all_refound:
         print(len(gene.seq.lower()) == len(csv_gene_seq.lower()) == len(scaff_gene_seq.lower()))
         print("="*30)  
 
+print("all refound end")
 # gff_example = "5151_2_6.gff"
 
 # example_gff = parse_gff(os.path.join(gffs_dir, gff_example), store_sequences=True)

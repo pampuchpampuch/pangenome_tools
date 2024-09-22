@@ -42,6 +42,7 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     """
     ### !!! works for only 2 contigs
     ### COULD BE IMPROVED BY SORTING COORDS
+    ### ISSUE: in theory, one gfa V could map to multiple maf blocks?
     contained_lens = [[],[]]
     all_lens = []
     for strandness in maf_blocks.keys():
