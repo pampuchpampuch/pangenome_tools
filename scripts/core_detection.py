@@ -1,8 +1,9 @@
 from pgtools import panaroo_parser
-from pgtools.gff_parser import parse_gff, parse_GFFs_dir
+from pgtools.gff_parser import parse_gff, parse_GFFs_dir, Pangenome_Gffs
 from pgtools.gfa_parser import parse_gfa1
 from pgtools.maf_parser import parse_maf
 from pgtools.utils import intersection_len, contains
+from pgtools.pangenome import Pangenome
 import os
 from Bio.Seq import Seq
 
@@ -47,5 +48,16 @@ for genome, scaffolds_coords in pangenome_GFFs.simple_gffs.items():
 
 # convert coord system to gff
     
-model = model.convert_coords_system("gff")
+model.convert_coords_system("gff")
+
+def map_to_gff(model: Pangenome, gffs: Pangenome_Gffs):
+    for seq_coll in model.seq_collections:
+        for seq in seq_coll.sequences:
+            genome = seq.get_genome_name()
+            scaff = seq.get_contig_name()
+            seq_cds = pangenome_GFFs[genome][scaff]
+            best_coverage = 0
+            best_cds = None
+            for cds in seq_cds:
+                coverage = intersection_len((seq.start, seq.end), (cds[0], cds[1]))
 

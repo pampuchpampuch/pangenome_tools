@@ -31,7 +31,7 @@ def main():
 
     maf_seqs_gff_coords = {}
     for genome, seqs in maf_sequences.items():
-        maf_seqs_gff_coords[genome] = sorted([seq.one_based_coords(seq.start, seq.end, seq.chr_size, seq.strand)
+        maf_seqs_gff_coords[genome] = sorted([seq.gff_coords(seq.start, seq.end, seq.chr_size, seq.strand)
                                        for seq in seqs], key = lambda x: (x[0], x[1]))
 
     # find, how long are the fragments in maf sequences that are in the cds fragments

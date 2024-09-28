@@ -136,11 +136,12 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
     in the panaroo aligned_gene_sequences)
     """
     panaroo_genes = []
+    seq_lens = []
     with open(aln_file) as handle:
         for record in SeqIO.parse(handle, "fasta"):
             seq_name, clustering_id = record.id.split(";")
             seq = record.seq
-
+            seq_lens.append(len(seq))
             if seq_name[:3] == "_R_":
                 # print("R")
                 strand = -1
@@ -156,16 +157,17 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
             #     continue
 
             is_refound = False
-            if gene_info.refound_strand and include_refound:
+            if gene_info.refound_strand:
+                if include_refound:
                 ###  HOW TO GET CONTIG SIZE
-                is_refound = True
-                chr_name = gene_info.gff_file + "." + gene_info.scaffold_name
-                chr_size = scaffolds_dict[chr_name].length
-                start, end = gene_info.refound_coords
-                # refound coord system is not in agreement with other coords in panaroo
-                # is zero based and if strand is "-", coords are given for rev strand
-                strand = gene_info.refound_strand * strand
-                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
+                    is_refound = True
+                    chr_name = gene_info.gff_file + "." + gene_info.scaffold_name
+                    chr_size = scaffolds_dict[chr_name].length
+                    start, end = gene_info.refound_coords
+                    # refound coord system is not in agreement with other coords in panaroo
+                    # is zero based and if strand is "-", coords are given for rev strand
+                    strand = gene_info.refound_strand * strand
+                    panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
 
             else:
                 cds_info = gff_dict[gene_info.annotation_id]   
@@ -202,6 +204,10 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
         # for maf_seq in maf_seqs:
         #     maf_out.write(maf_seq.MAF_repr())
         # maf_out.write('\n')
+        first_seq_len = seq_lens[0]
+        for seq_len in seq_lens:
+            assert seq_len == first_seq_len, seq_lens
+        # print("seq lens ok")
         return PanarooCluster(cluster_id, panaroo_genes, cluster_name = aln_file.split("/")[-1].split(".")[0])
 
 def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True) -> Panaroo:

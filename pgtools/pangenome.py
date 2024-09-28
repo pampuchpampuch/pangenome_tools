@@ -209,6 +209,18 @@ class BaseSeq:
         """
         return self.end - self.start
 
+    def MAF_repr(self):
+        """
+        returns string representing seguence in MAF format
+        """
+        
+        strand_sign = "+" if self.strand > 0 else "-"
+
+        s_line=f"s\t{self.seq_name}\t{self.start}\t{len(self)}\t{strand_sign}\t{self.src_size}\t{self.seq}\n"
+
+        return(s_line)
+            
+
 class SeqCollection:
     def __init__(self, id: int, seq_list: list[BaseSeq]):
         self.id: int = id
@@ -241,10 +253,34 @@ class SeqCollection:
                 if seq_name in seq_dict}
         return SeqCollection(self.id, list(seq_dict.values()))
 
-    def to_MAF(self):
-        seq_lens = np.array([len(seq) for seq in self.sequences])
-        assert all(seq_lens == seq_lens[0])
-    
+    def to_MAF_block(self, chr_names = None):
+        """
+        return a string representing block in MAF format
+        """
+        seq_lens = np.array([len(seq.seq) for seq in self.sequences])
+        seqs_refound = [seq.refound for seq in self.sequences]
+        assert all(seq_lens == seq_lens[0]), f"{seq_lens}, {seqs_refound}"
+
+        seq_dict = self.get_seq_dict()
+        # if self.aligned:
+
+        maf_str = "a\n"
+
+        if chr_names:
+            for maf_seq in seq_dict.values():
+                if maf_seq.seq_name in chr_names:
+                    maf_str += maf_seq.MAF_repr() 
+
+        else:
+            for maf_seq in seq_dict.values():
+                maf_str += maf_seq.MAF_repr() 
+
+        maf_str += '\n'       
+
+        # else:
+        #     sys.exit("MAF block alignment to be implemented")
+        
+        return maf_str
     def get_alignment(self):
         pass
 
@@ -346,9 +382,23 @@ class Pangenome:
         self.seq_collections = seq_colls
         self.coord_system = out_format
 
-    def to_MAF(self):
+    def to_MAF(self, out_file, chr_names=None):
+        """
+        Writes MAF object into a maf file. Filtering on sequence names
+        is possible
+        """
         if not self.coord_system == "maf":
             self.convert_coords_system("maf")
-        pass
         ### alignments have to be prepared if  sequences are not aligned already (check seq lens?)
+        out_file = open(out_file,"w")
+        out_file.write("##maf version=1 scoring=N/A\n\n")
 
+        if not chr_names:
+            for block in self.seq_collections:
+                out_file.write(block.to_MAF_block())
+        
+        else:
+             for block in self.seq_collections:
+                out_file.write(block.to_MAF_block(chr_names))           
+
+        out_file.close()

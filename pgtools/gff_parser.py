@@ -22,7 +22,7 @@ class Scaffold:
     def set_seq(self, seq: str):
         self.seq = seq
 
-class simple_Gff:
+class Simple_GFF:
     def __init__(self, genome, scaffolds, CDSs):
         self.genome = genome
         scaffolds_coords = {scaff.name: set() for scaff in scaffolds}
@@ -32,15 +32,15 @@ class simple_Gff:
             scaffolds_coords[cds.scaffold.name].add((cds.start, cds.end, cds.strand, cds.ID))
         self.scaffolds_coords = scaffolds_coords
 
-class pangenome_GFFs:
-    def __init__(self, simple_gffs):
+class Pangenome_Gffs:
+    def __init__(self, Simple_GFFs):
         genome_gff = {}
-        for gff in simple_gffs:
+        for gff in Simple_GFFs:
             genome_gff[gff.genome] = gff.scaffolds_coords
-        self.simple_gffs = genome_gff
+        self.Simple_GFFs = genome_gff
     
-    def add_gff(self, simple_gff):
-        self.simple_gffs[simple_gff.genome] = simple_gff.scaffolds_coords
+    def add_gff(self, Simple_GFF):
+        self.Simple_GFFs[Simple_GFF.genome] = Simple_GFF.scaffolds_coords
 
 class Gff:
     """
@@ -77,6 +77,7 @@ class Gff:
     def get_cds_sequence(self, gene_annotation_id: str) -> GffCDS:
         """
         NOT TESTED - are splicing coords coorect?
+        ADD for - strand - reverse complement
         """
         for gene in self.cds:
             if gene.ID == gene_annotation_id:
@@ -169,10 +170,10 @@ def parse_GFFs_dir(GFFs_dir, gff_simple = True):
         if f.endswith(".gff"):
             gff_obj = parse_gff(os.path.join(GFFs_dir, f))
             if gff_simple:
-                all_gff[gff_obj.genome] = simple_Gff(gff_obj.genome, gff_obj.scaffolds, gff_obj.cds)
+                all_gff[gff_obj.genome] = Simple_GFF(gff_obj.genome, gff_obj.scaffolds, gff_obj.cds)
             else:
                 all_gff[gff_obj.genome] = gff_obj
     if gff_simple:
-        return pangenome_GFFs(all_gff.values())
+        return Pangenome_Gffs(all_gff.values())
     return all_gff
 
