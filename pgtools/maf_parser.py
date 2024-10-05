@@ -21,23 +21,23 @@ class MAF(Pangenome):
         self.seq_collections[syn_block.id] = syn_block
         # self.synteny_blocks.append(syn_block)
 
-    def write_to_file(self, out_file, chr_names=None):
-        """
-        Writes MAF object into a maf file. Filtering on sequence names
-        is possible
-        """
-        out_file = open(out_file,"w")
-        out_file.write("##maf version=1 scoring=N/A\n\n")
+    # def write_to_file(self, out_file, chr_names=None):
+    #     """
+    #     Writes MAF object into a maf file. Filtering on sequence names
+    #     is possible
+    #     """
+    #     out_file = open(out_file,"w")
+    #     out_file.write("##maf version=1 scoring=N/A\n\n")
 
-        if not chr_names:
-            for block in self.synteny_blocks:
-                out_file.write(block.MAF_repr())
+    #     if not chr_names:
+    #         for block in self.synteny_blocks:
+    #             out_file.write(block.MAF_repr())
         
-        else:
-             for block in self.synteny_blocks:
-                out_file.write(block.MAF_repr(chr_names))           
+    #     else:
+    #          for block in self.synteny_blocks:
+    #             out_file.write(block.MAF_repr(chr_names))           
 
-        out_file.close()
+    #     out_file.close()
 
     def common_chr_names(self, other_maf):
         return set(self.chr_names).intersection(set(other_maf.chr_names))
@@ -141,29 +141,29 @@ class SyntenyBlock(SeqCollection):
     #     return set(self.seq_dict.keys())
         # return {seq.seq_name for seq in self.block_seqs}
 
-    def MAF_repr(self, chr_names = None):
-        """
-        return a string representing block in MAF format
-        """
-        if self.aligned:
+    # def MAF_repr(self, chr_names = None):
+    #     """
+    #     return a string representing block in MAF format
+    #     """
+    #     if self.aligned:
 
-            maf_str = "a\n"
+    #         maf_str = "a\n"
 
-            if chr_names:
-                for maf_seq in self.seq_dict.values():
-                    if maf_seq.seq_name in chr_names:
-                        maf_str += maf_seq.MAF_repr() 
+    #         if chr_names:
+    #             for maf_seq in self.seq_dict.values():
+    #                 if maf_seq.seq_name in chr_names:
+    #                     maf_str += maf_seq.MAF_repr() 
 
-            else:
-                for maf_seq in self.seq_dict.values():
-                    maf_str += maf_seq.MAF_repr() 
+    #         else:
+    #             for maf_seq in self.seq_dict.values():
+    #                 maf_str += maf_seq.MAF_repr() 
 
-            maf_str += '\n'       
+    #         maf_str += '\n'       
 
-        else:
-            sys.exit("MAF block alignment to be implemented")
+    #     else:
+    #         sys.exit("MAF block alignment to be implemented")
         
-        return maf_str
+    #     return maf_str
     
     def filter(self, seq_names):
         seqs = [seq for seq in self.seq_dict.values() if seq.seq_name in seq_names]
@@ -202,16 +202,16 @@ class MAFseq(BaseSeq):
     def __len__(self):
         return (self.end - self.start + 1)
     
-    def MAF_repr(self):
-        """
-        returns string representing seguence in MAF format
-        """
+    # def MAF_repr(self):
+    #     """
+    #     returns string representing seguence in MAF format
+    #     """
         
-        strand_sign = "+" if self.strand > 0 else "-"
+    #     strand_sign = "+" if self.strand > 0 else "-"
 
-        s_line=f"s\t{self.seq_name}\t{self.start}\t{len(self)}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
+    #     s_line=f"s\t{self.seq_name}\t{self.start}\t{len(self)}\t{strand_sign}\t{self.chr_size}\t{self.seq}\n"
 
-        return(s_line)
+    #     return(s_line)
             
     
     @staticmethod
@@ -281,7 +281,7 @@ def parse_maf(maf_file, store_seqs=True):
                     strand = 1 if strand_sign == "+" else -1
                     start = int(start)
                     chr_size = int(chr_size)
-                    end = start + int(seq_len) - 1
+                    end = start + int(seq_len)
 
                     if not store_seqs: seq = None
                     block_seqs.append(MAFseq(chr_name, start, end, strand, chr_size, in_format="maf", seq=seq))

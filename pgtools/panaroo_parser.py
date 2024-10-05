@@ -35,10 +35,10 @@ class PanarooGene(BaseSeq):
     Represent gene as defined in panaroo model (gene_data.csv and other files in panaroo output)
     """
 
-    def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, is_refound: bool, annotation_id: str, seq: str = None, in_format="panaroo"):
-        super().__init__(seq_name, start, end, strand, src_size, seq = seq, in_format = in_format)
+    def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, is_refound: bool, annotation_id: str, seq: str = None, in_format="panaroo", in_soft_core: bool = None):
+        super().__init__(seq_name, start, end, strand, src_size, seq = seq, in_format = in_format, in_soft_core=in_soft_core)
         self.refound: bool = is_refound
-        self.annotation_id: str = annotation_id    
+        self.annotation_ids.add(annotation_id)
         self.seq = seq
 
 class PanarooCluster(SeqCollection):
@@ -52,10 +52,10 @@ class PanarooCluster(SeqCollection):
     # def __init__(self, id: int, cluster_name, seq_dict):
     #     # seq_dict = {seq.seq_name: seq for seq in genes}
     #     super().__init__(id, seq_dict)
-    def __init__(self, id: int, seq_list: list[BaseSeq], cluster_name: str):
-        super().__init__(id, seq_list)
+    def __init__(self, id: int, seq_list: list[BaseSeq], cluster_name: str, is_soft_core: bool = None):
+        super().__init__(id, seq_list, is_soft_core= is_soft_core)
         self.cluster_name: str = cluster_name
-
+        # self.soft_core = is_soft_core
     def add_alignment(self, fasta):
         """
         Adds aligned sequences based on appropriate file in panaroo output
@@ -70,9 +70,10 @@ class Panaroo(Pangenome):
     """
     Represents Panaroo output
     """
-    def __init__(self, seqs_collections: list[PanarooCluster], graph_structure: nx.Graph):
+    def __init__(self, seqs_collections: list[PanarooCluster], graph_structure: nx.Graph, soft_core_thresholds: typing.Dict[str, int]):
         super().__init__(seqs_collections)
         self.graph: nx.Graph = graph_structure
+        self.soft_core_thresholds: typing.Dict[str, int] = soft_core_thresholds
     
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -106,6 +107,35 @@ def parse_gff(gff_path):
 
     return scaffolds_dict, CDS_dict
 
+def parse_core_thresholds(panaroo_dir: str):
+    core_thresholds = {}
+    with open(os.path.join(panaroo_dir, "summary_statistics.txt")) as f:
+        for line in f:
+            category, thr_val = line.split("(")
+            category = category.strip()
+            thr_val = int(thr_val.split("%")[0])/100
+            core_thresholds[category] = thr_val
+
+    return core_thresholds
+
+def parse_soft_core(panaroo_dir: str):
+    file = "core_alignment_filtered_header.embl"
+    core_clst_names = set()
+    with open(os.path.join(panaroo_dir, file)) as f:
+        clst_name = None
+        for line in f:
+            if not line.startswith("FT"):
+                continue
+            if line.split()[1] == "feature":
+                if clst_name:
+                    core_clst_names.add(clst_name)
+            else:
+                if line.split()[1].startswith("/label"):
+                    clst_name = line.split("=")[-1].strip()[:-len(".aln")]
+        core_clst_names.add(clst_name)
+            
+    return core_clst_names
+
 def parse_gene_data(gene_data_path):
     """
     Parses gene_data.csv (part of Panaroo output)
@@ -130,13 +160,21 @@ def parse_gene_data(gene_data_path):
 
     return genes_dict
 
-def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], cluster_id: int, include_refound = True) -> PanarooCluster:
+def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], cluster_id: int, include_refound = True, set_soft_core:typing.Set[str] = False) -> PanarooCluster:
     """
     Parses one Panaroo cluster (based on output files
     in the panaroo aligned_gene_sequences)
     """
     panaroo_genes = []
     seq_lens = []
+
+    clst_name  = aln_file.split("/")[-1].split(".")[0]
+    is_soft_core = None
+    if set_soft_core:
+        is_soft_core = True if clst_name in set_soft_core else False
+    # print(clst_name)
+    # print(set_soft_core)
+    # print(is_soft_core)
     with open(aln_file) as handle:
         for record in SeqIO.parse(handle, "fasta"):
             seq_name, clustering_id = record.id.split(";")
@@ -167,8 +205,11 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
                     # refound coord system is not in agreement with other coords in panaroo
                     # is zero based and if strand is "-", coords are given for rev strand
                     strand = gene_info.refound_strand * strand
-                    panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
+                # if store_annotation:
+                #     panaroo_genes.append(PanarooGene(chr_name + ";" + gene_info.annotation_id, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq, in_soft_core=is_soft_core))
 
+                # else:
+                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo_refound", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq, in_soft_core=is_soft_core))
             else:
                 cds_info = gff_dict[gene_info.annotation_id]   
                 chr_name = gene_info.chr_name
@@ -176,7 +217,11 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
                 strand = cds_info.strand * strand
                 start = cds_info.start
                 end = cds_info.end
-                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq))
+                # if store_annotation:
+                #     panaroo_genes.append(PanarooGene(chr_name + ";" + gene_info.annotation_id, start, end, strand, chr_size, in_format="panaroo", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq, in_soft_core=is_soft_core))
+
+                # else:
+                panaroo_genes.append(PanarooGene(chr_name, start, end, strand, chr_size, in_format="panaroo", is_refound=is_refound, annotation_id=gene_info.annotation_id, seq = seq, in_soft_core=is_soft_core))
             # if strand > 0:
             #     start = start - 1
             #     end = end          
@@ -208,12 +253,17 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
         for seq_len in seq_lens:
             assert seq_len == first_seq_len, seq_lens
         # print("seq lens ok")
-        return PanarooCluster(cluster_id, panaroo_genes, cluster_name = aln_file.split("/")[-1].split(".")[0])
 
-def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True) -> Panaroo:
+        return PanarooCluster(cluster_id, panaroo_genes, cluster_name = clst_name, is_soft_core = is_soft_core)
+
+def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True, detect_core = True) -> Panaroo:
     """
     Parses panaroo output
     """
+    core_thresholds = parse_core_thresholds(panaroo_dir)
+    # print(core_thresholds)
+    soft_core_cluster_names = parse_soft_core(panaroo_dir)
+    # print(soft_core_cluster_names)
     gff_dict = {}
     scaffolds_dict = {}
     for filename in os.listdir(gffs_dir):
@@ -232,12 +282,15 @@ def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True
     clust_id = 0
     for aln_file in os.listdir(aln_files_dir):
         aln_file = os.path.join(aln_files_dir,aln_file)
-        pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound)
+        if not detect_core:
+            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound)
+        else:
+            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound, set_soft_core=soft_core_cluster_names)
         panaroo_clusters.append(pan_clust)
         clust_id += 1
     
     G = nx.read_gml(os.path.join(panaroo_dir, "final_graph.gml"))
-    return Panaroo(panaroo_clusters, G)
+    return Panaroo(panaroo_clusters, G, core_thresholds)
 
 def panaroo_aln_to_maf(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], maf_out: str, include_refound = True):
     """

@@ -15,13 +15,13 @@ maf_dir = "/home/pampuch/studia/magisterka/test_data/klebsiella_subset_old/cactu
 # gfa_obj = parse_gfa1(gfa_dir)
 maf_obj = parse_maf(maf_dir)
 model = maf_obj
-model.detect_core(threshold=0.9)
+model.detect_soft_core(threshold=0.9)
 
 n_core = 0
 n_all = 0
 for seq_coll in model.seq_collections:
     n_all += 1
-    if seq_coll.core: n_core += 1
+    if seq_coll.soft_core: n_core += 1
     # print(seq_coll.core)
     # print(len(seq_coll.sequences))
 
@@ -40,8 +40,8 @@ if seq coll is core:
 """
 
 pangenome_GFFs = parse_GFFs_dir(gffs_dir, gff_simple=True)
-print(pangenome_GFFs.simple_gffs)
-for genome, scaffolds_coords in pangenome_GFFs.simple_gffs.items():
+print(pangenome_GFFs.simple_GFFs)
+for genome, scaffolds_coords in pangenome_GFFs.simple_GFFs.items():
     print(genome)
     print(scaffolds_coords)
     print("="*40)
@@ -49,6 +49,11 @@ for genome, scaffolds_coords in pangenome_GFFs.simple_gffs.items():
 # convert coord system to gff
     
 model.convert_coords_system("gff")
+
+for seq_coll in model.seq_collections:
+    for seq in seq_coll.sequences:
+        print("seq")
+        print(seq)
 
 def map_to_gff(model: Pangenome, gffs: Pangenome_Gffs):
     for seq_coll in model.seq_collections:

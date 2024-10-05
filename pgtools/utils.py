@@ -34,7 +34,6 @@ def intersection_len(s1_coords, s2_coords):
     """
     s1_start, s1_end = s1_coords
     s2_start, s2_end = s2_coords
-    # if (seq1_coords[0] >= seq2_coords[0]) and (seq1_coords[1] <= seq2_coords[1])
     if s1_end < s2_start or s1_start > s2_end:
         return 0
 
@@ -58,3 +57,8 @@ def contains(s1_coords, s2_coords, threshold = 0.7):
     """
     inter_len = intersection_len(s1_coords, s2_coords)
     return inter_len >= threshold
+
+def strand_rep(strand):
+    if strand > 0:
+        return "+"
+    return "-"
