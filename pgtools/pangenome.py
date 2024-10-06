@@ -4,8 +4,8 @@ import numpy as np
 import copy
 from pgtools.gff_parser import parse_GFFs_dir
 from pgtools.utils import contains
-
-### FROM GITHUB #####
+import networkx as nx
+### OLD WORKING VERSION #####
 
 FORMATS_COORD_SYSTEMS = {
     "maf": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "rev_strand"},
@@ -60,13 +60,7 @@ def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: 
 
     return start, end
 
-
-
-
-
-
-
-#### END GITHUB #####
+#### END OLD WORKING VERSION #####
 
 # FORMATS_COORD_SYSTEMS = {
 #     "maf": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "rev_strand"},
@@ -293,6 +287,7 @@ class BaseSeq:
         # description can store additional info ie mapped cds
         self.annotation_ids: typing.Set[str] = set()
         self.mapped_annotations = set()
+        self.cluster_id = None
         ### Add coord system?
         ### For which strands are coords given in the case of - strand
 
@@ -415,8 +410,8 @@ class BaseSeq:
     def set_soft_core(self, is_soft_core: bool):
         self.in_soft_core = is_soft_core      
     
-    def __print__(self):
-        return (f"{self.seq_name}: {self.strand} - {self.end}, {self.strand}")
+    def __str__(self):
+        return (f"{self.seq_name}: {self.start} - {self.end}, {self.strand}")
 
     def __len__(self):
         """
@@ -444,7 +439,7 @@ class BaseSeq:
 
 class SeqCollection:
     def __init__(self, id: int, seq_list: list[BaseSeq], is_soft_core: bool = None):
-        self.id: int = id
+        self.id: typing.Any = id
         # seq_dict = {seq.seq_name: seq for seq in seq_list}
         seq_dict = {seq for seq in seq_list}        
         self.sequences: typing.Set[BaseSeq] = set(seq_list)
@@ -472,10 +467,13 @@ class SeqCollection:
         return set(seq.seq_name for seq in self.sequences)
 
     def filter(self, seq_names: list[str]):
+        res_coll = copy.deepcopy(self)
         seq_dict = self.get_seq_dict()
         seq_dict = {seq_name: seq_dict[seq_name] for seq_name in seq_names
                 if seq_name in seq_dict}
-        return SeqCollection(self.id, list(seq_dict.values()))
+        res_coll.sequences = list(seq_dict.values())
+        # return SeqCollection(self.id, list(seq_dict.values()))
+        return res_coll
 
     def to_MAF_block(self, chr_names = None):
         """
@@ -542,14 +540,21 @@ class Pangenome:
             for seq_coll in seqs_collections:
                 seq_coll.id = new_id
                 new_id += 1
+        for seq_coll in seqs_collections:
+            clust_id = seq_coll.id
+            for seq in seq_coll.sequences:
+                seq.cluster_id = clust_id
         self.seq_collections: typing.Set[SeqCollection] = {collection for collection in seqs_collections}
         # self.source_seqs = {seq.name: seq for collection_seqs in seqs_collections for seq in collection_seqs}
         # ??? it would be better to have source seqs assigned to genomes
         # having a set of genomes is necessery for soft_core genome deduction
         # self.genome_names = se t([seq.get_genome_name() for seq_coll in seqs_collections for seq in seq_coll.seq_dict.values()])
         coords_systems = set([seq.coord_system for seq_coll in seqs_collections for seq in seq_coll.sequences])
-        assert len(coords_systems) == 1
+        assert len(coords_systems) == 1, coords_systems
         self.coord_system = coords_systems.pop()
+
+    def size(self):
+        return len(self.seq_collections)
 
     def get_seq_collections_dict(self):
         return {seq_coll.id: seq_coll for seq_coll in self.seq_collections}
@@ -561,6 +566,20 @@ class Pangenome:
         n_genomes_threshold = round(len(self.get_genome_names()) * threshold)
         for seq_coll in self.seq_collections:
             seq_coll.set_soft_core(n_genomes_threshold)
+
+    def get_seq_names(self):
+        return set([seq.seq_name for seq_coll in self.seq_collections for seq in seq_coll.sequences])
+
+    def get_all_sequences(self):
+        return set([seq for seq_coll in self.seq_collections for seq in seq_coll.sequences])
+
+    def get_sequences_by_seq_name(self):
+        res_dict = {seq_name:[] for seq_name in self.get_seq_names()}
+        all_seqs = self.get_all_sequences()
+        for seq in all_seqs:
+            res_dict[seq.seq_name].append(seq)
+        
+        return res_dict
 
     def filter(self, seq_names: list[str], preserve_collections=False):
         """
@@ -580,6 +599,29 @@ class Pangenome:
                 else:
                     filtered_collections.append(C.filter(seq_names))
         return Pangenome(filtered_collections)
+
+    def filter_by_genome(self, genome_names: list[str], preserve_collections=False):
+        """
+        Results in a model only clusters with chosen sequences are in
+        If preserve collection is set to True, whole selected sequence collection
+        (together with sequences the model is not filtered by) will be returned.
+        """
+        genome_names = set(genome_names)
+        res_model = copy.deepcopy(self)
+        collection_ids = set()
+        filtered_collections = []
+        collections_dict = self.get_seq_collections_dict()
+        for id, C in collections_dict.items():
+            if genome_names.issubset(set([seq.get_genome_name() for seq in C.sequences])):
+                collection_ids.add(id)
+                if preserve_collections:
+                    filtered_collections.append(C)
+                else:
+                    seq_names = [seq.seq_name for seq in C.sequences if seq.get_genome_name() in genome_names]
+                    filtered_collections.append(C.filter(seq_names))
+        res_model.seq_collections = list(filtered_collections)
+        # return Pangenome(filtered_collections)
+        return res_model
 
     def get_filtered_vertices_by_strand(self, seq_names, symmetrical_invert=False):
         """"
@@ -690,7 +732,98 @@ class Pangenome:
                 for annot in genome_cds_coords[seq.seq_name]:
                     if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.8):
                         seq.mapped_annotations.add(annot.annotation_id)
-                        print(seq.annotation_ids)
-                        print(seq.mapped_annotations)
-            print("-"*40)
+                        # print(seq.annotation_ids)
+                        # print(seq.mapped_annotations)
+            # print("-"*40)
         self.convert_coords_system(old_coord_cystem)
+
+    def get_sequence_adjecency_dict(self):
+        """
+        For each sequence, which sequence is adjecent to which
+        """
+        adjecency_dict = {}
+        # for seq_coll_1 in self.seq_collections:
+
+        #     for seq_coll_2 in self.seq_collections:
+        #         if seq_coll_1.id == seq_coll_2.id:
+        #             continue
+        # model_gff = self.convert_coords_system("gff")
+        # seqs_by_seq_name = model_gff.get_sequences_by_seq_name()
+        seqs_by_seq_name = self.get_sequences_by_seq_name()
+        # print("seqs by seq name", seqs_by_seq_name)
+        for seq_name, seqs in seqs_by_seq_name.items():
+            # sort sequences by start pos in gff coords - easy to get adjencent fragments
+            # from there
+            seqs.sort(key = lambda s: s.convert_coords("gff").start)
+            # print(seqs)
+            for i in range(0,len(seqs)-1):
+                adjecency_dict[seqs[i]] = seqs[i + 1]
+                # print(seqs[i].convert_coords("gff"), seqs[i+1].convert_coords("gff"))
+        # print("adj dict")
+        # print(adjecency_dict)     
+        return adjecency_dict
+    
+    def get_cluster_adjency_dict(self):
+        sequence_adj_dict = self.get_sequence_adjecency_dict()
+        cluster_adj_dict = {seq_coll.id: set() for seq_coll in self.seq_collections}
+
+        for seq, adj_seq in sequence_adj_dict.items():
+            # for adj_seq_ in adj_seqs:
+            cluster_adj_dict[seq.cluster_id].add(adj_seq.cluster_id)
+        return cluster_adj_dict
+    
+    def get_panaroo_edges(self):
+        """
+        Returns tuples (seq_coll_1, seq_coll_2) according to Panaroo graph construction:
+        'Panaroo builds a full graphical representation of the pangenome, where nodes are
+        clusters of orthologous genes (COGs) and two nodes are connected by an edge if they
+        are adjacent on a contig in any sample from the population'
+        """
+        cluster_adj_dict = self.get_cluster_adjency_dict()
+        G_edges = []
+        for clust_id, adj_clust_ids in cluster_adj_dict.items():
+            for adj_id in adj_clust_ids:
+                G_edges.append((clust_id, adj_id))
+        return G_edges
+    
+    def get_cluster_graph(self):
+        """
+        Returns networxx graph constructed according to the snippet from
+        the panaroo paper:
+        'Panaroo builds a full graphical representation of the pangenome, where nodes are
+        clusters of orthologous genes (COGs) and two nodes are connected by an edge if they
+        are adjacent on a contig in any sample from the population'
+        """
+        G_edges = self.get_panaroo_edges()
+        return nx.DiGraph(G_edges)
+
+    def get_panaroo_triplets(self):
+        """
+        Retrives triplets used by Panaroo to detect structural variants.
+        For each genome, for each contig, seq collections are sorted accoring to that genome sequences.
+        Blocks have to be paralogs free. For chosen genome, returns list of triplets that 
+        are present in this genome
+        """
+        # filtered_model = self.filter_by_genome([genome])
+        # for genome in self.get_genome_names():
+        G_clusters = self.get_cluster_graph()
+        # cluster_paths = nx.all_simple_paths(G_clusters)
+        # print(cluster_paths)
+        # cluster_paths = set()
+        cluster_paths = []
+        for start_node in G_clusters.nodes:
+            for end_node in G_clusters.nodes:
+                paths = nx.all_simple_paths(G_clusters, start_node, end_node)
+                for path_ in paths:
+                    if len(path_) > 2:
+                        # cluster_paths.append(path_)
+                        for i in range(0, len(path_) - 2):
+                            # cluster_paths.add(tuple(path_[i:i+3]))
+                            cluster_paths.append(tuple(path_[i:i+3]))
+
+                            print(cluster_paths)
+
+        return cluster_paths
+
+    def get_str_presence_absence(self):
+        pass

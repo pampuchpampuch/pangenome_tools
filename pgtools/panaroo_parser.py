@@ -75,6 +75,13 @@ class Panaroo(Pangenome):
         self.graph: nx.Graph = graph_structure
         self.soft_core_thresholds: typing.Dict[str, int] = soft_core_thresholds
     
+    def get_clust_id_name_mapping(self):
+        clust_id_mapping = {}
+        for seq_coll in self.seq_collections:
+            clust_id_mapping[seq_coll.id] = seq_coll.cluster_name
+
+        return clust_id_mapping
+    
 def strand_rep(strand_sign):
     if strand_sign == "+":
         return 1

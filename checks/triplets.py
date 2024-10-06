@@ -8,7 +8,7 @@ from pgtools import panaroo_parser
 gff_dir = "/home/pampuch/studia/magisterka/test_data/klebsiella_subset_old/gff"
 maf_dir = "/home/pampuch/studia/magisterka/test_data/klebsiella_subset_old/new_maf_no_refound.maf"
 panaroo_dir = "/home/pampuch/studia/magisterka/test_data/klebsiella_subset/panaroo_out"
-panaroo_obj = panaroo_parser.parse_panaroo_output(panaroo_dir, gff_dir, include_refound=False)
+panaroo_obj = panaroo_parser.parse_panaroo_output(panaroo_dir, gff_dir, include_refound=True)
 # simple_gffs = parse_GFFs_dir(gff_dir)
 maf = parse_maf(maf_dir)
 
@@ -58,79 +58,59 @@ maf = parse_maf(maf_dir)
 #     print("-"*30)
 #     # break
 
-maf_gff = maf.convert_coords_system("gff")
-maf_block = None
-for seq_coll in list(maf_gff.seq_collections)[:3]:
-    print(seq_coll)
-    print(seq_coll.id)
-    # if 4 < len(seq_coll) < 6:
-    #     maf_block = copy.deepcopy(seq_coll)
-    #     break
-    for seq in seq_coll.sequences:
-        # print(seq)
-        print(seq.coord_system)
-    print("-"*30)
-    # break
+panaroo_small = panaroo_parser.Panaroo(list(panaroo_obj.seq_collections)[:100], panaroo_obj.graph, panaroo_obj.soft_core_thresholds)
 
-maf_block = None
-for seq_coll in maf.seq_collections:
-    if 4 < len(seq_coll) < 6:
-        maf_block = copy.deepcopy(seq_coll)
+# print("panaroo")
+# for seq_coll in panaroo_obj.seq_collections:
+#     print(seq_coll.id)
+#     break
+#     # for seq in seq_coll.sequences:
+#     #     # seq = seq
+#     #     break
+
+print("panaroo_small")
+seq_panaroo = None
+for seq_coll in panaroo_small.seq_collections:
+    # print("panaroo_ids")
+    # print(seq_coll.id)
+    # print(seq_coll.cluster_name)
+    for seq in seq_coll.sequences:
+        seq_panaroo = seq
         break
 
-# maf_block = None
-# for seq_coll in maf.seq_collections:
-#     # if 4 < len(seq_coll) < 6:
-#     #     maf_block = copy.deepcopy(seq_coll)
-#     #     break
-#     for seq in seq_coll.sequences:
-#         print(seq.coord_system)
-#     break
+genome = seq_panaroo.get_genome_name()
+print("Genome", genome)
+seq_name = seq_panaroo.seq_name
 
-# print(len(maf_block))
+sequence_dict = panaroo_small.get_sequences_by_seq_name()
+# print(sequence_dict)
 
-# small_maf = MAF([maf_block])
-# small_maf_gff = small_maf.convert_coords_system("gff")
+panaroo_filtred = panaroo_small.filter_by_genome([genome])
+print(panaroo_filtred.size())
 
-# small_maf_maf = copy.deepcopy(small_maf)
-# small_maf_gff = small_maf
-# # print(small_maf)
-# # why no sequences after conversion??
+clust_id_name_mapping = panaroo_filtred.get_clust_id_name_mapping()
 
+clust_adj_dict = panaroo_filtred.get_cluster_adjency_dict()
+print(clust_adj_dict)
 
+full_clust_adj_dict = panaroo_obj.get_cluster_adjency_dict()
+print("Full")
+len_counts = {}
+for k, v in full_clust_adj_dict.items():
+    # print(k, len(v))
+    # print(k,v)
+    if len(v) in len_counts:
+        len_counts[len(v)] += 1
+    else:
+        len_counts[len(v)] = 1
 
-# print("MAF")
-# print(list(small_maf.seq_collections)[0].to_MAF_block())
-# print("GFF")
-# print(list(small_maf_gff.seq_collections)[0].to_MAF_block())
+# print(len_counts)
 
+# print("n_clusters", len(panaroo_obj.seq_collections))
+        
+"""
+adj cluster dict for panaroo aln files does not exactly match gml from panaroo, but 
+that is because Panaroo uses then multiple steps that modify the structure.
+"""
 
-
-# print("conversion ugly")
-# print(ugly_coords)
-
-# block_gff_coords = list(small_maf_gff.seq_collections)[0]
-
-
-# # try and map each sequence with converted coords
-
-
-# maf.convert_coords_system("gff")
-
-# # for seq_coll in maf.seq_collections:
-#     # print(seq_coll)
-
-# block = None
-
-# # for seq_coll in maf.seq_collections:
-# #     print(seq_coll)
-
-# maf_obj = parse_maf(maf_dir)
-# model = maf_obj
-# model.convert_coords_system("gff")
-# # old_model = model.convert_coords_system("gff")
-
-
-
-# for seq in block.sequences:
-#     print(seq.coord_system)
+panaroo_obj.get_panaroo_triplets()
