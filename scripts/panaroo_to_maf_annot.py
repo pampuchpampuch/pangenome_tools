@@ -34,7 +34,13 @@ def main():
     #     panaroo_aln_to_maf(aln_file, gff_dict, genes_dict, maf_out)
 
     # maf_out.close()
-    panaroo_obj = panaroo_parser.parse_panaroo_output(args.panaroo_dir, args.gff_dir, include_refound=args.include_refound, store_annotation=True)
+    panaroo_obj = panaroo_parser.parse_panaroo_output(args.panaroo_dir, args.gff_dir, include_refound=args.include_refound)
+    for seq_coll in panaroo_obj.seq_collections:
+        # print(seq_coll.cluster_name)
+        if not len(seq_coll) <= 20:
+            print(seq_coll.cluster_name)
+            for seq in seq_coll.sequences:
+                print(seq)
     panaroo_obj.to_MAF(args.maf_out)
 
 if __name__ == "__main__":

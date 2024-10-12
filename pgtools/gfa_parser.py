@@ -1,6 +1,7 @@
 from itertools import product
 import typing
 from pgtools.pangenome import BaseSeq, SeqCollection, Pangenome
+from tqdm import tqdm
 
 class S_line:
 	def __init__(self, name, sequence):
@@ -50,6 +51,7 @@ def parse_gfa1(gfa_file):
     s_lines = [None]
     blocks = defaultdict(list)
     srcSizes = defaultdict(int)
+    print("parsing gfa")
     with open(gfa_file) as f:
         for line in f:
             line = line.strip()
@@ -79,7 +81,7 @@ def parse_gfa1(gfa_file):
                     blocks[vtx].append((alt, start, strand))
     # return(blocks, s_lines)
     gfa_v = []
-    for i in range(1, len(blocks)+1):
+    for i in tqdm(range(1, len(blocks)+1)):
         s_line, block = s_lines[i], blocks[i]
         id = int(s_line.id)
         length = s_line.length

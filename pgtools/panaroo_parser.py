@@ -38,7 +38,7 @@ class PanarooGene(BaseSeq):
     def __init__(self, seq_name: str, start: int, end: int, strand: int, src_size: int, is_refound: bool, annotation_id: str, seq: str = None, in_format="panaroo", in_soft_core: bool = None):
         super().__init__(seq_name, start, end, strand, src_size, seq = seq, in_format = in_format, in_soft_core=in_soft_core)
         self.refound: bool = is_refound
-        self.annotation_ids.add(annotation_id)
+        self.annotation_ids.append(annotation_id)
         self.seq = seq
 
 class PanarooCluster(SeqCollection):

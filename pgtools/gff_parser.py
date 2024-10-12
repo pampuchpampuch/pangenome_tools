@@ -24,7 +24,7 @@ class Scaffold:
     def set_seq(self, seq: str):
         self.seq = seq
 
-class Simple_annotation:
+class SimpleAnnotation:
     def __init__(self, start, end, strand, annotation_id) -> None:
         self.start: int = start
         self.end: int = end
@@ -46,8 +46,8 @@ class Simple_GFF:
         # assumes that in the same scaffold there are no cds with the same coords
         # as it is unlikely and allows for storing them in a set
         for cds in CDSs:
-            scaffolds_coords[cds.scaffold.name].add(Simple_annotation(cds.start, cds.end, cds.strand, cds.ID))
-        self.scaffolds_coords: Dict[str, Simple_annotation] = scaffolds_coords        
+            scaffolds_coords[cds.scaffold.name].add(SimpleAnnotation(cds.start, cds.end, cds.strand, cds.ID))
+        self.scaffolds_coords: Dict[str, SimpleAnnotation] = scaffolds_coords        
 
     def get_overlapping_annotations(self, return_pairs = False):
         gff = self.scaffolds_coords
@@ -97,7 +97,7 @@ class Pangenome_Gffs:
     def add_gff(self, Simple_GFF):
         self.simple_GFFs[Simple_GFF.genome] = Simple_GFF.scaffolds_coords
     
-    def get_genome_cds_coords_dict(self, sep = ".") -> Dict[str, Simple_annotation]:
+    def get_genome_cds_coords_dict(self, sep = ".") -> Dict[str, SimpleAnnotation]:
         all_cds_coords = {}
         for genome, gff in self.simple_GFFs.items():
             for scaff, cds in gff.scaffolds_coords.items():

@@ -3,42 +3,44 @@ from tqdm import tqdm
 from itertools import combinations
 from pgtools import gfa_parser
 from pgtools import maf_parser
+from pgtools.utils import intersection_len, contains
 
-def intersection_len(s1_coords, s2_coords):
-    """
-    seq2 is assumed to be from MAF and seq1 from gfa (checking how well
-    seq1 fits into seq2)
-    """
-    s1_start, s1_end = s1_coords
-    s2_start, s2_end = s2_coords
-    # if (seq1_coords[0] >= seq2_coords[0]) and (seq1_coords[1] <= seq2_coords[1])
-    if s1_end < s2_start or s1_start > s2_end:
-        return 0
+# def intersection_len(s1_coords, s2_coords):
+#     """
+#     seq2 is assumed to be from MAF and seq1 from gfa (checking how well
+#     seq1 fits into seq2)
+#     """
+#     s1_start, s1_end = s1_coords
+#     s2_start, s2_end = s2_coords
+#     # if (seq1_coords[0] >= seq2_coords[0]) and (seq1_coords[1] <= seq2_coords[1])
+#     if s1_end < s2_start or s1_start > s2_end:
+#         return 0
 
-    if s1_start < s2_start:
-        inter_start = s2_start
-    else:
-        inter_start = s1_start    
+#     if s1_start < s2_start:
+#         inter_start = s2_start
+#     else:
+#         inter_start = s1_start    
 
-    if s1_end > s2_end:
-        inter_end = s2_end
-    else:
-        inter_end = s1_end
+#     if s1_end > s2_end:
+#         inter_end = s2_end
+#     else:
+#         inter_end = s1_end
         
-    return inter_end - inter_start + 1
+#     return inter_end - inter_start + 1
 
-def contains(s1_coords, s2_coords, threshold = 0.7):
-    """
-    Assumes s1 is from gfa and s2 from maf. The goal is to check if
-    gfa vertex is contained in maf block. Threshold is a fraction of 
-    gfa seq that is contained in maf block sequence
-    """
-    inter_len = intersection_len(s1_coords, s2_coords)
-    return inter_len >= threshold
+# def contains(s1_coords, s2_coords, threshold = 0.7):
+#     """
+#     Assumes s1 is from gfa and s2 from maf. The goal is to check if
+#     gfa vertex is contained in maf block. Threshold is a fraction of 
+#     gfa seq that is contained in maf block sequence
+#     """
+#     inter_len = intersection_len(s1_coords, s2_coords)
+#     return inter_len >= threshold
 
 def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     """
-    Calculates gfa vertices freq in maf blocks
+    Calculates gfa vertices freq in maf blocks. Consideres only blocks and verticles
+    that have both contigs in them. 
     """
     ### !!! works for only 2 contigs
     ### COULD BE IMPROVED BY SORTING COORDS
@@ -49,17 +51,20 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
         for V in gfa_verticles[strandness]:
             in_block = False
             for block in maf_blocks[strandness]:
-                all_lens.append(V[0][1]-V[0][0]+1)
+                gff_vert_len = V[0][1]-V[0][0]+1
+                all_lens.append(gff_vert_len)
                 inter_len_1 = intersection_len(V[0], block[0])
                 inter_len_2 = intersection_len(V[1], block[1])
-                if (inter_len_1 >= threshold) and (inter_len_2 >= threshold):
-                    ### TODO how to average that
-                    # if our focus is particular block - averaging for two seqs is
-                    # a sensible approach. If our focus is parcitular contig - average for
-                    # contigs separately
-                    # contained_lens.append((inter_len_1 + inter_len_2) / 2)
-                    contained_lens[0].append(inter_len_1)
-                    contained_lens[1].append(inter_len_2)
+                contained_lens[0].append(inter_len_1)
+                contained_lens[1].append(inter_len_2)
+                # if (inter_len_1 >= threshold * gff_vert_len) and (inter_len_2 >= threshold * gff_vert_len):
+                #     ### TODO how to average that
+                #     # if our focus is particular block - averaging for two seqs is
+                #     # a sensible approach. If our focus is parcitular contig - average for
+                #     # contigs separately
+                #     # contained_lens.append((inter_len_1 + inter_len_2) / 2)
+                #     contained_lens[0].append(inter_len_1)
+                #     contained_lens[1].append(inter_len_2)
                 # print("v",V)
                 # print("block", block)
             #     if contains(V[0], block[0]) and contains(V[1], block[1]):
@@ -79,6 +84,7 @@ def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
     for V in tqdm(list(gfa.seq_collections)):
         gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.get_sequence_names()),2))))
     inter_contigs = maf_contigs.intersection(gfa_contigs)
+    # returns coocuring contig pairs that exists in both files
     return inter_contigs
 
 # def test_maf_filtering(maf):
@@ -94,11 +100,12 @@ def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
 #     maf_blocks = maf.get_filtered_blocks_by_strand(contig_pair)
 #     print(maf_blocks)
 
-def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.7, sym_inv = False):
+def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.6, sym_inv = True):
     # print(csv_out)
     csv_file = open(csv_out, "w")
-    csv_file.write("contig_1, contig_2, frequency\n")
+    csv_file.write("contig_1,contig_2,frequency_1,frequency_2\n")
     gfa = gfa_parser.parse_gfa1(gfa)
+    print("gfa parsed")
     maf = maf_parser.parse_maf(maf, store_seqs=False)
     common_contig_pairs = coocuring_contigs(gfa, maf)
     # maf_contigs = set(maf.chr_names)
@@ -110,21 +117,26 @@ def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.7, sym_inv = False):
     # print(all_contig_names)
     # contig_pairs = combinations(all_contig_names, 2)
     contig_pairs = common_contig_pairs
-
-    for contig_pair in contig_pairs:
+    print(f"Calculating coverage for {len(contig_pairs)} contig pairs")
+    for contig_pair in tqdm(contig_pairs):
         # print(contig_pair)
         gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=sym_inv)
         maf_blocks = maf.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=sym_inv)
         contained_lens, all_lens = vertices_freq(maf_blocks, gfa_verticles, threshold=overlap_threshold)
-        if not contained_lens:
-            freq = 0
-        else: 
-            freq = (sum(contained_lens[0]) + sum(contained_lens[1])) / sum(all_lens) * 2
+        cont_freqs = []
+        for cont_lens in contained_lens:
+            if not cont_lens:
+                freq = 0
+            else: 
+                # freq = (sum(contained_lens[0]) + sum(contained_lens[1])) / sum(all_lens) * 2
+                # freq = ((sum(contained_lens[0]) / sum(all_lens)) + (sum(contained_lens[1]) / sum(all_lens)))/2
+                freq = sum(cont_lens) / sum(all_lens)
+            cont_freqs.append(freq)
         # print("==================")
         # print(not_contained_lens)
         # if contained_lens:
-        csv_file.write(f"{contig_pair[0]}, {contig_pair[1]}, {freq}\n")
-
+        csv_file.write(f"{contig_pair[0]},{contig_pair[1]},{cont_freqs[0]},{cont_freqs[1]}\n")
+    csv_file.close()
     # # for contig_pair in contig_pairs:
     # gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair)
     # maf_blocks = maf.get_filtered_blocks_by_strand(contig_pair)
@@ -183,6 +195,7 @@ def main():
     args = parser.parse_args()
     # test()
     # test_maf_filtering(args.maf)
+    # print("xd")
     gfa_vs_maf(args.gfa, args.maf, args.csv_out, overlap_threshold=args.overlap_threshold, sym_inv=args.sym_invert)
 
 if __name__ == "__main__":

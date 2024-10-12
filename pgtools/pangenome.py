@@ -18,7 +18,7 @@ FORMATS_COORD_SYSTEMS = {
     }
 
 def invert_coords(start, end, seq_size, format):
-    assert format in FORMATS_COORD_SYSTEMS
+    assert format in FORMATS_COORD_SYSTEMS, format
     coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
     # what if end is not half open?????
     # in theory, gff is fully closed, but Panaroo seems to
@@ -285,8 +285,8 @@ class BaseSeq:
         self.seq: str = seq
         self.in_soft_core: bool = in_soft_core
         # description can store additional info ie mapped cds
-        self.annotation_ids: typing.Set[str] = set()
-        self.mapped_annotations = set()
+        self.annotation_ids: typing.List[str] = []
+        self.mapped_annotations: typing.List[str] = []
         self.cluster_id = None
         ### Add coord system?
         ### For which strands are coords given in the case of - strand
@@ -295,7 +295,8 @@ class BaseSeq:
         start = self.start
         end = self.end
         seq_size = self.src_size
-        assert format in FORMATS_COORD_SYSTEMS
+        format = self.coord_system
+        assert format in FORMATS_COORD_SYSTEMS, format
         coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
         # what if end is not half open?????
         # in theory, gff is fully closed, but Panaroo seems to
@@ -728,13 +729,20 @@ class Pangenome:
         simple_gffs = parse_GFFs_dir(gff_dir)
         genome_cds_coords = simple_gffs.get_genome_cds_coords_dict()
         for seq_coll in self.seq_collections:
+            try:
+                print(seq_coll.cluster_name)
+            except:
+                print(seq_coll.id)
             for seq in seq_coll.sequences:
                 for annot in genome_cds_coords[seq.seq_name]:
                     if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.8):
-                        seq.mapped_annotations.add(annot.annotation_id)
+                        seq.mapped_annotations.append(annot)
                         # print(seq.annotation_ids)
                         # print(seq.mapped_annotations)
-            # print("-"*40)
+                seq.mapped_annotations = sorted(seq.mapped_annotations, key = lambda x: x.start)
+                print("from_panaroo",seq.annotation_ids)
+                print("mapped",[annot.annotation_id for annot in seq.mapped_annotations])
+            print("-"*40)
         self.convert_coords_system(old_coord_cystem)
 
     def get_sequence_adjecency_dict(self):
@@ -756,8 +764,14 @@ class Pangenome:
             # from there
             seqs.sort(key = lambda s: s.convert_coords("gff").start)
             # print(seqs)
+            # The following works, if sequences are non-overlapping - not the case for original
+            # panarpoo input files
             for i in range(0,len(seqs)-1):
                 adjecency_dict[seqs[i]] = seqs[i + 1]
+
+            # For the overlapping sewuences case, both overlapiing with start > and end >  should 
+            # probably go into adjencent sequences - but for sure not only te fisrt one after the sequence.
+            # Nevetheless simple approach will for for 
                 # print(seqs[i].convert_coords("gff"), seqs[i+1].convert_coords("gff"))
         # print("adj dict")
         # print(adjecency_dict)     
@@ -797,7 +811,7 @@ class Pangenome:
         G_edges = self.get_panaroo_edges()
         return nx.DiGraph(G_edges)
 
-    def get_panaroo_triplets(self):
+    def get_panaroo_cluster_triplets(self):
         """
         Retrives triplets used by Panaroo to detect structural variants.
         For each genome, for each contig, seq collections are sorted accoring to that genome sequences.
@@ -810,6 +824,7 @@ class Pangenome:
         # cluster_paths = nx.all_simple_paths(G_clusters)
         # print(cluster_paths)
         # cluster_paths = set()
+        print("graph constructed")
         cluster_paths = []
         for start_node in G_clusters.nodes:
             for end_node in G_clusters.nodes:
@@ -825,5 +840,5 @@ class Pangenome:
 
         return cluster_paths
 
-    def get_str_presence_absence(self):
+    def get_genome_str_presence_absence(self, genome):
         pass

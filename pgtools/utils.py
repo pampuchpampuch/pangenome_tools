@@ -56,7 +56,7 @@ def contains(s1_coords, s2_coords, threshold = 0.7):
     gfa seq that is contained in maf block sequence
     """
     inter_len = intersection_len(s1_coords, s2_coords)
-    return inter_len >= threshold
+    return inter_len / (s2_coords[1] - s2_coords[0] + 1) >= threshold
 
 def strand_rep(strand):
     if strand > 0:

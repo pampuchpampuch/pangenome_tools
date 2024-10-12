@@ -90,19 +90,19 @@ print(panaroo_filtred.size())
 
 clust_id_name_mapping = panaroo_filtred.get_clust_id_name_mapping()
 
-clust_adj_dict = panaroo_filtred.get_cluster_adjency_dict()
-print(clust_adj_dict)
+# clust_adj_dict = panaroo_filtred.get_cluster_adjency_dict()
+# print(clust_adj_dict)
 
-full_clust_adj_dict = panaroo_obj.get_cluster_adjency_dict()
-print("Full")
-len_counts = {}
-for k, v in full_clust_adj_dict.items():
-    # print(k, len(v))
-    # print(k,v)
-    if len(v) in len_counts:
-        len_counts[len(v)] += 1
-    else:
-        len_counts[len(v)] = 1
+# full_clust_adj_dict = panaroo_obj.get_cluster_adjency_dict()
+# print("Full")
+# len_counts = {}
+# for k, v in full_clust_adj_dict.items():
+#     # print(k, len(v))
+#     # print(k,v)
+#     if len(v) in len_counts:
+#         len_counts[len(v)] += 1
+#     else:
+#         len_counts[len(v)] = 1
 
 # print(len_counts)
 
@@ -113,4 +113,4 @@ adj cluster dict for panaroo aln files does not exactly match gml from panaroo, 
 that is because Panaroo uses then multiple steps that modify the structure.
 """
 
-panaroo_obj.get_panaroo_triplets()
+panaroo_small.get_panaroo_triplets()
