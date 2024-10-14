@@ -37,6 +37,9 @@ from pgtools.utils import intersection_len, contains
 #     inter_len = intersection_len(s1_coords, s2_coords)
 #     return inter_len >= threshold
 
+
+
+
 def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     """
     Calculates gfa vertices freq in maf blocks. Consideres only blocks and verticles
@@ -57,6 +60,11 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
                 inter_len_2 = intersection_len(V[1], block[1])
                 contained_lens[0].append(inter_len_1)
                 contained_lens[1].append(inter_len_2)
+                """
+                TU JEST ~BŁĄD   
+                czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
+                kilka razy - efektywnie jeden gfa coveraga jest dzielony przez pełną długość kilka razy
+                """
                 # if (inter_len_1 >= threshold * gff_vert_len) and (inter_len_2 >= threshold * gff_vert_len):
                 #     ### TODO how to average that
                 #     # if our focus is particular block - averaging for two seqs is
@@ -75,17 +83,97 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     return contained_lens, all_lens
     # return contained_lens, not_contained_lens
 
+def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
+    """
+    Calculates gfa vertices freq in maf blocks. Consideres only blocks and verticles
+    that have both contigs in them. 
+    """
+    ### !!! works for only 2 contigs
+    ### COULD BE IMPROVED BY SORTING COORDS
+    ### ISSUE: in theory, one gfa V could map to multiple maf blocks?
+    contained_lens = [[],[]]
+    all_lens = []
+    for strandness in maf_blocks.keys():
+        for V in gfa_verticles[strandness]:
+            # in_block = False
+            for block in maf_blocks[strandness]:
+                gff_vert_len = v
+                """
+                TU JEST ~BŁĄD   
+                czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
+                kilka razy - efektywnie jeden gfa coveraga jest dzielony przez pełną długość kilka razy
+                """
+                # all_lens.append(gff_vert_len)
+                inter_len_1 = intersection_len(V[0], block[0])
+                inter_len_2 = intersection_len(V[1], block[1])
+                contained_lens[0].append(inter_len_1)
+                contained_lens[1].append(inter_len_2)
+                # """
+                # TU JEST ~BŁĄD   
+                # czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
+                # kilka razy - efektywnie jeden gfa coveraga jest dzielony przez pełną długość kilka razy
+                # """
+            """
+            rozwiązanie błędu
+            jak już pozbiramy wszystkie możliwe overlapy - dodajemy do all lens
+            MOŻE TU POWINNAŚ JUŻ UŚREDNIĆ???? i potem podzielić przez liczbę wierzchołków dla pary
+            """
+            all_lens.append(gff_vert_len)
+
+                # if (inter_len_1 >= threshold * gff_vert_len) and (inter_len_2 >= threshold * gff_vert_len):
+                #     ### TODO how to average that
+                #     # if our focus is particular block - averaging for two seqs is
+                #     # a sensible approach. If our focus is parcitular contig - average for
+                #     # contigs separately
+                #     # contained_lens.append((inter_len_1 + inter_len_2) / 2)
+                #     contained_lens[0].append(inter_len_1)
+                #     contained_lens[1].append(inter_len_2)
+                # print("v",V)
+                # print("block", block)
+            #     if contains(V[0], block[0]) and contains(V[1], block[1]):
+            #         contained_lens.append(V[0][1]-V[0][0]+1)
+            #         in_block = True
+            # if not in_block:
+            #     not_contained_lens.append(V[0][1]-V[0][0]+1)
+    return contained_lens, all_lens
+    # return contained_lens, not_contained_lens
+
+# def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
+#     maf_contigs = set()
+#     # for block in tqdm(list(maf.seq_collections)):
+#     #     maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_sequence_names()), 2)))
+#     # print("maf_contigs", maf_contigs)
+#     gfa_contigs = set()
+#     # for V in tqdm(list(gfa.seq_collections)):
+#     #    gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.get_sequence_names()),2))))
+#     print("dupa")
+#     out = p_map(dupa, list(gfa.seq_collections))
+#     print("dupa po")
+#     print(out)
+#     # inter_contigs = maf_contigs.intersection(gfa_contigs)
+#     # returns coocuring contig pairs that exists in both files
+#     return inter_contigs
+
+
+# ======
+
 def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
-    maf_contigs = set()
+    maf_contigs = []
     for block in tqdm(list(maf.seq_collections)):
-        maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_sequence_names()), 2)))
+        maf_contigs += list(combinations(block.get_sequence_names(), 2))
     # print("maf_contigs", maf_contigs)
-    gfa_contigs = set()
+    maf_contigs = set([tuple(x) for x in map(sorted, maf_contigs)])
+    gfa_contigs = []
     for V in tqdm(list(gfa.seq_collections)):
-        gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.get_sequence_names()),2))))
+       gfa_contigs += list(combinations(V.get_sequence_names(),2))
+    gfa_contigs = set([tuple(x) for x in map(sorted, gfa_contigs)])
+    # out = p_map(list(gfa.seq_collections))
+    # print(out)
     inter_contigs = maf_contigs.intersection(gfa_contigs)
     # returns coocuring contig pairs that exists in both files
     return inter_contigs
+
+# ======
 
 # def test_maf_filtering(maf):
 #     maf = maf_parser.parse_maf(maf, store_seqs=False)
@@ -104,6 +192,7 @@ def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.6, sym_inv = True):
     # print(csv_out)
     csv_file = open(csv_out, "w")
     csv_file.write("contig_1,contig_2,frequency_1,frequency_2\n")
+    csv_file.flush()
     gfa = gfa_parser.parse_gfa1(gfa)
     print("gfa parsed")
     maf = maf_parser.parse_maf(maf, store_seqs=False)
@@ -118,6 +207,7 @@ def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.6, sym_inv = True):
     # contig_pairs = combinations(all_contig_names, 2)
     contig_pairs = common_contig_pairs
     print(f"Calculating coverage for {len(contig_pairs)} contig pairs")
+    
     for contig_pair in tqdm(contig_pairs):
         # print(contig_pair)
         gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=sym_inv)
@@ -136,6 +226,7 @@ def gfa_vs_maf(gfa, maf, csv_out, overlap_threshold = 0.6, sym_inv = True):
         # print(not_contained_lens)
         # if contained_lens:
         csv_file.write(f"{contig_pair[0]},{contig_pair[1]},{cont_freqs[0]},{cont_freqs[1]}\n")
+        csv_file.flush()
     csv_file.close()
     # # for contig_pair in contig_pairs:
     # gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair)
@@ -196,6 +287,14 @@ def main():
     # test()
     # test_maf_filtering(args.maf)
     # print("xd")
+    # maf = maf_parser.parse_maf(args.maf)
+    # maf_contigs = []
+    # for block in tqdm(list(maf.seq_collections)):
+    #     maf_contigs += list(combinations(block.get_sequence_names(), 2))
+    # print("maf_contigs", maf_contigs)
+    # maf_contigs = set([tuple(x) for x in map(sorted, maf_contigs)])
+    # print(maf_contigs)
+                      
     gfa_vs_maf(args.gfa, args.maf, args.csv_out, overlap_threshold=args.overlap_threshold, sym_inv=args.sym_invert)
 
 if __name__ == "__main__":
