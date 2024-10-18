@@ -82,6 +82,24 @@ class Panaroo(Pangenome):
 
         return clust_id_mapping
     
+    def assigned_annotations_to_csv(pg, gff_dir, csv_name = "panaroo_annotations_summary.csv"):
+        res_csv = open(csv_name, "w")
+        res_csv.write("cluster name,cluster size,core status,seq name,CDS\n")
+        res_csv.flush()
+        pg.detect_soft_core()
+        # pg.map_to_gff(gff_dir)
+        for seq_coll in pg.seq_collections:
+            id = seq_coll.cluster_name
+            clust_size = len(seq_coll)
+            core_status = seq_coll.soft_core
+            for seq in seq_coll.sequences:
+                # annotation len is also an iimportant aspect, but can be easily retrived from gff file
+                # print(seq.seq_name, [ann.annotation_id for ann in seq.mapped_annotations], seq_coll.soft_core)
+                annots = ";".join([ann_id for ann_id in seq.annotation_ids])
+                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{annots}\n")
+                res_csv.flush()
+        res_csv.close()
+    
 def strand_rep(strand_sign):
     if strand_sign == "+":
         return 1

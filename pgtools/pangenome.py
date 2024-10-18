@@ -729,25 +729,44 @@ class Pangenome:
         simple_gffs = parse_GFFs_dir(gff_dir)
         genome_cds_coords = simple_gffs.get_genome_cds_coords_dict()
         for seq_coll in self.seq_collections:
-            try:
-                print(seq_coll.cluster_name)
-            except:
-                print(seq_coll.id)
+            # try:
+            #     print(seq_coll.cluster_name)
+            # except:
+            #     print(seq_coll.id)
             for seq in seq_coll.sequences:
                 for annot in genome_cds_coords[seq.seq_name]:
-                    if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.8):
+                    if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.7):
                         seq.mapped_annotations.append(annot)
                         # print(seq.annotation_ids)
                         # print(seq.mapped_annotations)
                 seq.mapped_annotations = sorted(seq.mapped_annotations, key = lambda x: x.start)
-                print("from_panaroo",seq.annotation_ids)
-                print("mapped",[annot.annotation_id for annot in seq.mapped_annotations])
-            print("-"*40)
+                # print("from_panaroo",seq.annotation_ids)
+                # print("mapped",[annot.annotation_id for annot in seq.mapped_annotations])
+            # print("-"*40)
         self.convert_coords_system(old_coord_cystem)
+
+    def annotations_to_csv(self, gff_dir, csv_name = "annotations_summary.csv"):
+        res_csv = open(csv_name, "w")
+        res_csv.write("cluster id,cluster size,core status,seq name,mapped annotations\n")
+        res_csv.flush()
+        self.detect_soft_core()
+        self.map_to_gff(gff_dir)
+        for seq_coll in self.seq_collections:
+            id = seq_coll.id
+            clust_size = len(seq_coll)
+            core_status = seq_coll.soft_core
+            for seq in seq_coll.sequences:
+                # annotation len is also an iimportant aspect, but can be easily retrived from gff file
+                # print(seq.seq_name, [ann.annotation_id for ann in seq.mapped_annotations], seq_coll.soft_core)
+                annots = ";".join([ann.annotation_id for ann in seq.mapped_annotations])
+                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{annots}\n")                
+                res_csv.flush()
+        res_csv.close()
 
     def get_sequence_adjecency_dict(self):
         """
         For each sequence, which sequence is adjecent to which
+        ASSUMES THAT ALL SEQUENCES DO NOT OVERLAP
         """
         adjecency_dict = {}
         # for seq_coll_1 in self.seq_collections:
