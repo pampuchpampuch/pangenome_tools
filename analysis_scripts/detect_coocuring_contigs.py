@@ -209,7 +209,7 @@ def main():
     csv_out = open(args.csv_out, "w")
     csv_out.write("contig1,contig2\n")
     for c1,c2 in common_contig_pairs:
-        csv_out.wirte(f"{c1},{c2}\n").flush()
+        csv_out.write(f"{c1},{c2}\n").flush()
     csv_out.close()
 if __name__ == "__main__":
     main()
