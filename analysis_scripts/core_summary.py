@@ -46,10 +46,12 @@ def main():
                         help="dir with gff files")
     parser.add_argument("csv_out",
                         help="csv output file")
+    parser.add_argument("--overlap_threshold", default=0.7, dest="overlap_threshold", type=float,
+                        help="section of sequences that have to overlap to consider them mapped to annotation")
     args = parser.parse_args()
 
     maf = parse_maf(args.maf)
-    maf.annotations_to_csv(args.gff_dir, csv_name=args.csv_out)
+    maf.annotations_to_csv(args.gff_dir, csv_name=args.csv_out, threshold=args.overlap_threshold)
 
 if __name__ == "__main__":
     main()

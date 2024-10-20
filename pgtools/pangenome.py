@@ -740,7 +740,7 @@ class Pangenome:
                 if not seq.seq_name in genome_cds_coords.keys():
                     continue
                 for annot in genome_cds_coords[seq.seq_name]:
-                    if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.7):
+                    if contains((seq.start, seq.end),(annot.start, annot.end), threshold=overlap_threshold):
                         seq.mapped_annotations.append(annot)
                         # print(seq.annotation_ids)
                         # print(seq.mapped_annotations)
@@ -750,12 +750,12 @@ class Pangenome:
             # print("-"*40)
         self.convert_coords_system(old_coord_cystem)
 
-    def annotations_to_csv(self, gff_dir, csv_name = "annotations_summary.csv"):
+    def annotations_to_csv(self, gff_dir, csv_name = "annotations_summary.csv", overlap_threshold = 0.7):
         res_csv = open(csv_name, "w")
         res_csv.write("cluster id,cluster size,core status,seq name,mapped annotations\n")
         res_csv.flush()
         self.detect_soft_core()
-        self.map_to_gff(gff_dir)
+        self.map_to_gff(gff_dir, overlap_threshold=overlap_threshold)
         for seq_coll in self.seq_collections:
             id = seq_coll.id
             clust_size = len(seq_coll)

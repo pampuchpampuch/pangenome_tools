@@ -139,22 +139,6 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     return contained_lens, all_lens
     # return contained_lens, not_contained_lens
 
-# def coocuring_contigs(gfa: gfa_parser.SimpleVertices, maf: maf_parser.MAF):
-#     maf_contigs = set()
-#     # for block in tqdm(list(maf.seq_collections)):
-#     #     maf_contigs = maf_contigs.union(set(combinations(sorted(block.get_sequence_names()), 2)))
-#     # print("maf_contigs", maf_contigs)
-#     gfa_contigs = set()
-#     # for V in tqdm(list(gfa.seq_collections)):
-#     #    gfa_contigs = gfa_contigs.union(set((combinations(sorted(V.get_sequence_names()),2))))
-#     print("dupa")
-#     out = p_map(dupa, list(gfa.seq_collections))
-#     print("dupa po")
-#     print(out)
-#     # inter_contigs = maf_contigs.intersection(gfa_contigs)
-#     # returns coocuring contig pairs that exists in both files
-#     return inter_contigs
-
 
 # ======
 
