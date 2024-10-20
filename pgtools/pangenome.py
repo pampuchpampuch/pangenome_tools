@@ -735,6 +735,10 @@ class Pangenome:
             # except:
             #     print(seq_coll.id)
             for seq in seq_coll.sequences:
+                #sometimes in maf files there will be ancestor sequences that are not
+                # present in gff files
+                if not seq.seq_name in genome_cds_coords.keys():
+                    continue
                 for annot in genome_cds_coords[seq.seq_name]:
                     if contains((seq.start, seq.end),(annot.start, annot.end), threshold=0.7):
                         seq.mapped_annotations.append(annot)
