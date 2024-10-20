@@ -550,6 +550,7 @@ class Pangenome:
         # ??? it would be better to have source seqs assigned to genomes
         # having a set of genomes is necessery for soft_core genome deduction
         # self.genome_names = se t([seq.get_genome_name() for seq_coll in seqs_collections for seq in seq_coll.seq_dict.values()])
+        # print(seqs_collections)
         coords_systems = set([seq.coord_system for seq_coll in seqs_collections for seq in seq_coll.sequences])
         assert len(coords_systems) == 1, coords_systems
         self.coord_system = coords_systems.pop()

@@ -201,7 +201,7 @@ def main():
                         help="csv output file")
     args = parser.parse_args()
     gfa = args.gfa
-    maf = args.gfa
+    maf = args.maf
     gfa = gfa_parser.parse_gfa1(gfa)
     print("gfa parsed")
     maf = maf_parser.parse_maf(maf, store_seqs=False)
