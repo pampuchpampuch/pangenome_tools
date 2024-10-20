@@ -84,51 +84,6 @@ from pgtools.utils import intersection_len, contains
 #     return inter_len >= threshold
 
 
-
-
-def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
-    """
-    Calculates gfa vertices freq in maf blocks. Consideres only blocks and verticles
-    that have both contigs in them. 
-    """
-    ### !!! works for only 2 contigs
-    ### COULD BE IMPROVED BY SORTING COORDS
-    ### ISSUE: in theory, one gfa V could map to multiple maf blocks?
-    contained_lens = [[],[]]
-    all_lens = []
-    for strandness in maf_blocks.keys():
-        for V in gfa_verticles[strandness]:
-            in_block = False
-            for block in maf_blocks[strandness]:
-                gff_vert_len = V[0][1]-V[0][0]+1
-                all_lens.append(gff_vert_len)
-                inter_len_1 = intersection_len(V[0], block[0])
-                inter_len_2 = intersection_len(V[1], block[1])
-                contained_lens[0].append(inter_len_1)
-                contained_lens[1].append(inter_len_2)
-                """
-                TU JEST ~BŁĄD   
-                czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
-                kilka razy - efektywnie jeden gfa coveraga jest dzielony przez pełną długość kilka razy
-                """
-                # if (inter_len_1 >= threshold * gff_vert_len) and (inter_len_2 >= threshold * gff_vert_len):
-                #     ### TODO how to average that
-                #     # if our focus is particular block - averaging for two seqs is
-                #     # a sensible approach. If our focus is parcitular contig - average for
-                #     # contigs separately
-                #     # contained_lens.append((inter_len_1 + inter_len_2) / 2)
-                #     contained_lens[0].append(inter_len_1)
-                #     contained_lens[1].append(inter_len_2)
-                # print("v",V)
-                # print("block", block)
-            #     if contains(V[0], block[0]) and contains(V[1], block[1]):
-            #         contained_lens.append(V[0][1]-V[0][0]+1)
-            #         in_block = True
-            # if not in_block:
-            #     not_contained_lens.append(V[0][1]-V[0][0]+1)
-    return contained_lens, all_lens
-    # return contained_lens, not_contained_lens
-
 def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     """
     Calculates gfa vertices freq in maf blocks. Consideres only blocks and verticles
@@ -143,7 +98,7 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
         for V in gfa_verticles[strandness]:
             # in_block = False
             for block in maf_blocks[strandness]:
-                gff_vert_len = v
+                gff_vert_len = V[0][1]-V[0][0]+1
                 """
                 TU JEST ~BŁĄD   
                 czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
