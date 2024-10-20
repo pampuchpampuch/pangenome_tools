@@ -51,7 +51,7 @@ def main():
     args = parser.parse_args()
 
     maf = parse_maf(args.maf)
-    maf.annotations_to_csv(args.gff_dir, csv_name=args.csv_out, threshold=args.overlap_threshold)
+    maf.annotations_to_csv(args.gff_dir, csv_name=args.csv_out, overlap_threshold=args.overlap_threshold)
 
 if __name__ == "__main__":
     main()
