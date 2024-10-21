@@ -4,6 +4,7 @@ from itertools import combinations
 from pgtools import gfa_parser
 from pgtools import maf_parser
 from pgtools.utils import intersection_len, contains
+import pandas as pd
 
 '''
 Jeśli chcesz sprawdzić jak to wygląda dokładniej to dla pary contigów csv:
@@ -261,10 +262,11 @@ def main():
                         help="path to the maf file")
     parser.add_argument("gfa",
                         help="path to the gfa file")
-    parser.add_argument("contig_pairs",
-                        help ="contig pairs to consider in the analysis (contig1,contig2),(contig3,contig4)")
+    parser.add_argument("contig_pairs_csv",
+                        help ="contig pairs to consider in the analysis: path to csv. File has to contain columns named contig1,contig2")
     parser.add_argument("csv_out",
                         help="csv output file")
+    parser.add_argument
     parser.add_argument("--overlap_threshold", default=0.7, dest="overlap_threshold", type=float,
                         help="section of sequences that have to overlap to consider them contained in a block")
     parser.add_argument("--symmetrical_invert", action="store_true", default=False,
@@ -282,7 +284,7 @@ def main():
     # maf_contigs = set([tuple(x) for x in map(sorted, maf_contigs)])
     # print(maf_contigs)
 
-    contig_pairs = [x.strip("()").split(",") for x in args.contig_pairs.split("),")]
+    contig_pairs = pd.read_csv(args.contig_pairs_csv)[["contig1", "contig2"]].to_numpy()
     print(contig_pairs)
                       
     gfa_vs_maf(args.gfa, args.maf, contig_pairs, args.csv_out, overlap_threshold=args.overlap_threshold, sym_inv=args.sym_invert)
