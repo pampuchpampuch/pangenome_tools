@@ -196,7 +196,7 @@ def gfa_vs_maf(gfa, maf, contig_pairs, csv_out, overlap_threshold = 0.6, sym_inv
     print(f"Calculating coverage for {len(contig_pairs)} contig pairs")
     
     for contig_pair in tqdm(contig_pairs):
-        print(contig_pair)
+        # print(contig_pair)
         gfa_verticles = gfa.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=sym_inv)
         maf_blocks = maf.get_filtered_vertices_by_strand(contig_pair, symmetrical_invert=sym_inv)
         contained_lens, all_lens = vertices_freq(maf_blocks, gfa_verticles, threshold=overlap_threshold)
