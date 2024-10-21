@@ -98,11 +98,9 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
     for strandness in maf_blocks.keys():
         for V in gfa_verticles[strandness]:
             # in_block = False
-            print(V)
+            # print(V)
+            gff_vert_len = V[0][1]-V[0][0]+1
             for block in maf_blocks[strandness]:
-                gff_vert_len = V[0][1]-V[0][0]+1
-                if not gff_vert_len:
-                    continue
                 """
                 TU JEST ~BŁĄD   
                 czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
