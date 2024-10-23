@@ -232,7 +232,7 @@ def parse_GFFs_dir(GFFs_dir, gff_simple = True):
     all_gff = {}
     for f in os.listdir(GFFs_dir):
         if f.endswith(".gff"):
-            gff_obj = parse_gff(os.path.join(GFFs_dir, f))
+            gff_obj = parse_gff(os.path.join(GFFs_dir, f), store_sequences=True)
             if gff_simple:
                 all_gff[gff_obj.genome] = Simple_GFF(gff_obj.genome, gff_obj.scaffolds, gff_obj.cds)
             else:
