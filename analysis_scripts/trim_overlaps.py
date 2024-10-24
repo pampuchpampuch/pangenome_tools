@@ -75,7 +75,7 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
             all_sequences.append(seq)
             
     print("getting sequence pairs")
-    all_pairs_idx = list(combinations(list(range(len(all_sequences))),2))
+    # all_pairs_idx = list(combinations(list(range(len(all_sequences))),2))
 
     # this implementation was really slow, only combinations within contigs needed, changing approach
 
