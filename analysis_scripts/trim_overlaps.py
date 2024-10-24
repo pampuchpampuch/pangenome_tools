@@ -230,7 +230,7 @@ def main():
 
     # print(maf_trimmed.coord_system)
     blocks_to_align = []
-    for block in tqdm(maf_trimmed.seq_collections):
+    for block in maf_trimmed.seq_collections:
         if block.id in trimmed_block_ids:
             blocks_to_align.append(block)
     print("Aligning blocks if needed")

@@ -312,7 +312,7 @@ class SeqCollection:
         alignment = proc.stdout
         # print(alignment)
         # os.remove(fasta_name)
-
+        print(alignment)
         aligned_seqs = parse_mafft_output(alignment)
         # print(aligned_seqs)
         for i in range(len(sequences_to_aln)):
