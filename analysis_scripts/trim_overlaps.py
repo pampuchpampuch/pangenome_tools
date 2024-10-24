@@ -22,23 +22,20 @@ def trim_overlap(s1, s2):
     seq_len = len(shorter_seq.seq.replace("-",""))
 
     old_short = deepcopy(shorter_seq)
-
-    # adding paddding so that m2s is not sad :(
-    inter_len += 2
     # there is overlap and we want to trim the shorter sequence: 
     if shorter_seq.start < longer_seq.start:
         # longer seq is behind shorter seq - we want to trimm the end of shorter seq
-        shorter_seq.end -= (inter_len)
+        shorter_seq.end -= (inter_len + 1)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len - 1]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1 :]
     else:
-        shorter_seq.start += (inter_len)
+        shorter_seq.start += (inter_len + 1)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len:]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1:]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len - 1]
 
 def clean_block(block):
     for s1, s2 in combinations(block.sequences,2):
@@ -90,7 +87,7 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
             contig_sequences_dict[seq.seq_name] = [seq_idx]
     
     same_contig_pairs_idx = []
-    for contig, seq_idxs in tqdm(list(contig_sequences_dict.items())):
+    for contig, seq_idxs in contig_sequences_dict.items():
         same_contig_pairs_idx += list(combinations(seq_idxs, 2))
 
     # #filtering, so only pairs from same contig are later checked
@@ -147,9 +144,6 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         
     new_blocks_dict = {}
     for seq in all_sequences:
-        # if whole sequence was trimmed - do not include
-        if seq.start >= seq.end:
-            continue
         if seq.cluster_id in new_blocks_dict:
             new_blocks_dict[seq.cluster_id].add(seq)
         else:
@@ -230,7 +224,7 @@ def main():
 
     # print(maf_trimmed.coord_system)
     blocks_to_align = []
-    for block in maf_trimmed.seq_collections:
+    for block in tqdm(maf_trimmed.seq_collections):
         if block.id in trimmed_block_ids:
             blocks_to_align.append(block)
     print("Aligning blocks if needed")
