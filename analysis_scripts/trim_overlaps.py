@@ -22,20 +22,23 @@ def trim_overlap(s1, s2):
     seq_len = len(shorter_seq.seq.replace("-",""))
 
     old_short = deepcopy(shorter_seq)
+
+    # adding paddding so that m2s is not sad :(
+    inter_len += 2
     # there is overlap and we want to trim the shorter sequence: 
     if shorter_seq.start < longer_seq.start:
         # longer seq is behind shorter seq - we want to trimm the end of shorter seq
-        shorter_seq.end -= (inter_len + 1)
+        shorter_seq.end -= (inter_len)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len - 1]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1 :]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len]
     else:
-        shorter_seq.start += (inter_len + 1)
+        shorter_seq.start += (inter_len)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1:]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len:]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len - 1]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len]
 
 def clean_block(block):
     for s1, s2 in combinations(block.sequences,2):
@@ -87,7 +90,7 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
             contig_sequences_dict[seq.seq_name] = [seq_idx]
     
     same_contig_pairs_idx = []
-    for contig, seq_idxs in contig_sequences_dict.items():
+    for contig, seq_idxs in tqdm(list(contig_sequences_dict.items())):
         same_contig_pairs_idx += list(combinations(seq_idxs, 2))
 
     # #filtering, so only pairs from same contig are later checked
@@ -200,8 +203,8 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
-    # maf = maf_parser.MAF(list(maf.seq_collections)[:500])
-    maf = maf_parser.MAF(list(maf.seq_collections))
+    maf = maf_parser.MAF(list(maf.seq_collections)[:500])
+    # maf = maf_parser.MAF(list(maf.seq_collections))
 
 
     # maf.to_MAF("first.maf")
