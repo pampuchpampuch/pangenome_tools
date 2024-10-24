@@ -149,10 +149,10 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
-    small_maf_0 = maf_parser.MAF(list(maf.seq_collections)[:500])
+    # small_maf_0 = maf_parser.MAF(list(maf.seq_collections)[:500])
 
-    small_maf = deepcopy(small_maf_0)
-    maf_trimmed, trimmed_block_ids = trimm_overlaps_maf(small_maf, return_trimmed_ids=True)
+    # small_maf = deepcopy(small_maf_0)
+    maf_trimmed, trimmed_block_ids = trimm_overlaps_maf(maf, return_trimmed_ids=True)
 
     # overlap_1 = get_overlapping_pairs(small_maf_0)
     # print("over 0", len(overlap_1))
