@@ -66,21 +66,24 @@ def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: 
     return start, end
 
 #### END OLD WORKING VERSION #####
-def parse_mafft_output(alignment):
+def parse_mafft_output(alignment_fasta):
     '''
     parses mafft output - one MSA
     '''
 
-    seq_list=re.findall(">[^>]+",alignment)
-    sequences=[]
+    # seq_list=re.findall(">[^>]+",alignment)
+    # sequences=[]
 
-    for seq in seq_list:
-        id_end=re.match(".+",seq).end()
-        sequence=seq[id_end:].replace('\n','')
-        if sequence:
-            sequences.append(sequence)
+    # for seq in seq_list:
+    #     id_end=re.match(".+",seq).end()
+    #     sequence=seq[id_end:].replace('\n','')
+    #     if sequence:
+    #         sequences.append(sequence)
 
-    return(sequences)
+    # return(sequences)
+
+    records = list(SeqIO.parse(alignment_fasta, "fasta"))
+    return {record.id: record.seq for record in records}
 
 class BaseSeq:
     """
@@ -317,10 +320,16 @@ class SeqCollection:
         mafft_out = open("mafft.out", "w")
         mafft_out.write(alignment)
         mafft_out.close()
-        aligned_seqs = parse_mafft_output(alignment)
+        aligned_seqs = parse_mafft_output("mafft.out")
         # print(aligned_seqs)
-        for i in range(len(sequences_to_aln)):
-            sequences_to_aln[i].seq = aligned_seqs[i]
+        new_seqs = set()
+        for seq in sequences_to_aln:
+            if seq.seq_name in aligned_seqs:
+                seq.seq = aligned_seqs[seq.seq_name]
+                new_seqs.add(seq)
+            else:
+                print("Lack of seq" + seq.seq_name)
+        self.sequences = new_seqs
 
     def to_MAF_block(self, chr_names = None, align = False):
         """

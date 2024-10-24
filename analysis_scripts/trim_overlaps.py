@@ -202,8 +202,8 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
-    # maf = maf_parser.MAF(list(maf.seq_collections)[:500])
-    maf = maf_parser.MAF(list(maf.seq_collections))
+    maf = maf_parser.MAF(list(maf.seq_collections)[:500])
+    # maf = maf_parser.MAF(list(maf.seq_collections))
 
 
     # maf.to_MAF("first.maf")
