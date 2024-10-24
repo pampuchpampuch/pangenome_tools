@@ -5,6 +5,11 @@ import copy
 from pgtools.gff_parser import parse_GFFs_dir
 from pgtools.utils import contains
 import networkx as nx
+from Bio import SeqIO
+import os
+import subprocess
+import re
+
 ### OLD WORKING VERSION #####
 
 FORMATS_COORD_SYSTEMS = {
@@ -61,209 +66,22 @@ def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: 
     return start, end
 
 #### END OLD WORKING VERSION #####
+def parse_mafft_output(alignment):
+    '''
+    parses mafft output - one MSA
+    '''
 
-# FORMATS_COORD_SYSTEMS = {
-#     "maf": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "rev_strand"},
-#     # per ensembl, gff is NOT half open (is fully-closed?) - but works???
-#     "gff": {"coord_system": ("1-based", "half-open"), "rev_strand_coords": "forward_strand"},
-#     "gfa": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "forward_strand"},
-#     # is panaroo coord system the same for refound and regular (gff) genes - NO, refound is 0-based?
-#     "panaroo": {"coord_system": ("1-based", "half-open"), "rev_strand_coords": "forward_strand"},
-#     "panaroo_refound":  {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "forward_strand"}
-#     }
+    seq_list=re.findall(">[^>]+",alignment)
+    sequences=[]
 
-# def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: str, out_format: str = "maf"):
-#     ### !!! currently only conversion to MAF format coord system is implemented.
-#     assert out_format == "maf"
-#     in_coord_system = FORMATS_COORD_SYSTEMS[in_format]["coord_system"]
+    for seq in seq_list:
+        id_end=re.match(".+",seq).end()
+        sequence=seq[id_end:].replace('\n','')
+        if sequence:
+            sequences.append(sequence)
 
-#     res_start = start if in_coord_system[0] == "0-based" else start - 1
-#     res_end = end if in_coord_system[1] == "half-open" else end + 1
+    return(sequences)
 
-#     if strand > 0 or FORMATS_COORD_SYSTEMS[in_format] == FORMATS_COORD_SYSTEMS[out_format]:
-#         return res_start, res_end        
-    
-#     rev_res_start = src_size - res_end
-#     rev_res_end = src_size - res_start
-
-#     return rev_res_start, rev_res_end
-
-# def invert_coords(start, end, seq_size, format):
-#     assert format in FORMATS_COORD_SYSTEMS
-#     coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
-#     if coord_system[0] == "0-based":
-#         res_end = seq_size - start
-#     else:
-#         res_end = seq_size - start + 1
-#     res_start = seq_size - end
-#     return res_start, res_end
-
-
-
-# FORMATS_COORD_SYSTEMS = {
-#     "maf": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "rev_strand"},
-#     # per ensembl, gff is NOT half open (but fully-closed) - but works???
-#     # "gff": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "forward_strand"},
-
-#     "gff": {"coord_system": ("1-based", "fully-closed"), "rev_strand_coords": "forward_strand"},
-#     "gfa": {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "forward_strand"},
-#     # is panaroo coord system the same for refound and regular (gff) genes - NO, refound is 0-based?
-#     "panaroo": {"coord_system": ("1-based", "half-open"), "rev_strand_coords": "forward_strand"},
-#     "panaroo_refound":  {"coord_system": ("0-based", "half-open"), "rev_strand_coords": "forward_strand"}
-#     }
-
-# def invert_coords(start, end, seq_size, format):
-#     assert format in FORMATS_COORD_SYSTEMS
-#     coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
-#     # what if end is not half open?????
-#     # in theory, gff is fully closed, but Panaroo seems to
-#     # assume that it is not (or mabey it is because of how splicing works?)
-#     if coord_system[0] == "0-based":
-#         res_end = seq_size - start
-#     else:
-#         res_end = seq_size - start + 1
-#     if coord_system[1] == "fully-closed":
-#         res_start = seq_size - end + 1
-#     else:
-#         res_start = seq_size - end
-#     return res_start, res_end
-
-
-# def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: str, out_format: str = "maf"):
-#     ### !!! other end than half-open is NOT supported!
-#     in_coord_system = FORMATS_COORD_SYSTEMS[in_format]["coord_system"]
-#     out_coord_system = FORMATS_COORD_SYSTEMS[out_format]["coord_system"]
-#     in_rev = FORMATS_COORD_SYSTEMS[in_format]["rev_strand_coords"]
-#     out_rev = FORMATS_COORD_SYSTEMS[out_format]["rev_strand_coords"]
-#     # if in is rev strand and the out is not: reverse if strand is -
-
-#     # start working on forward strand
-#     if in_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, in_format)
-              
-#     # then to "universal" coord system (0-based, half open, forward strand)
-
-#     if in_coord_system[0] == "1-based":
-#         start += 1
-
-#     # then to chosen out format 
-
-#     if out_coord_system[0] == "1-based":
-#         start -= 1
-#     if out_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, out_format)
-
-#     return start, end
-
-# def invert_coords(start, end, seq_size, format):
-#     assert format in FORMATS_COORD_SYSTEMS
-#     coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
-#     # what if end is not half open?????
-#     # in theory, gff is fully closed, but Panaroo seems to
-#     # assume that it is not (or mabey it is because of how splicing works?)
-#     if coord_system[0] == "0-based":
-#         res_end = seq_size - start
-#     else:
-#         res_end = seq_size - start + 1
-#     if coord_system[1] == "fully-closed":
-#         res_start = seq_size - end + 1
-#     else:
-#         res_start = seq_size - end + 1
-#     return res_start, res_end
-
-# def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: str, out_format: str = "maf"):
-#     ### !!! other end than half-open is NOT supported!
-#     in_coord_system = FORMATS_COORD_SYSTEMS[in_format]["coord_system"]
-#     out_coord_system = FORMATS_COORD_SYSTEMS[out_format]["coord_system"]
-#     in_rev = FORMATS_COORD_SYSTEMS[in_format]["rev_strand_coords"]
-#     out_rev = FORMATS_COORD_SYSTEMS[out_format]["rev_strand_coords"]
-#     # if in is rev strand and the out is not: reverse if strand is -
-
-#     # start working on forward strand
-#     if in_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, in_format)
-              
-#     # then to "universal" coord system (0-based, half open, forward strand)
-
-#     if in_coord_system[0] == "1-based":
-#         start -= 1
-
-#     # then to chosen out format 
-
-#     if out_coord_system[0] == "1-based":
-#         start += 1
-#     if out_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, out_format)
-
-#     return start, end
-
-# def invert_coords(start, end, seq_size, format):
-#     assert format in FORMATS_COORD_SYSTEMS
-#     coord_system = FORMATS_COORD_SYSTEMS[format]["coord_system"]
-#     # what if end is not half open?????
-#     # in theory, gff is fully closed, but Panaroo seems to
-#     # assume that it is not (or mabey it is because of how splicing works?)
-#     if coord_system[0] == "0-based":
-#         res_end = seq_size - start
-#     else:
-#         res_end = seq_size - start + 1
-#     if coord_system[1] == "fully-closed":
-#         res_start = seq_size - end + 1
-#     else:
-#         res_start = seq_size - end
-#     return res_start, res_end
-
-# def convert_coords(start: int, end: int, strand: int, src_size: int, in_format: str, out_format: str = "maf"):
-#     ### !!! other end than half-open is NOT supported!
-#     in_coord_system = FORMATS_COORD_SYSTEMS[in_format]["coord_system"]
-#     out_coord_system = FORMATS_COORD_SYSTEMS[out_format]["coord_system"]
-#     in_rev = FORMATS_COORD_SYSTEMS[in_format]["rev_strand_coords"]
-#     out_rev = FORMATS_COORD_SYSTEMS[out_format]["rev_strand_coords"]
-#     # if in is rev strand and the out is not: reverse if strand is -
-
-#     # start working on forward strand
-#     if in_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, in_format)
-              
-#     # then to "universal" coord system (0-based, half open, forward strand)
-
-#     if in_coord_system[0] == "1-based":
-#         start -= 1
-
-#     if in_coord_system[1] == "fully-closed":
-#         end += 1
-
-#     # then to chosen out format 
-
-#     if out_coord_system[0] == "1-based":
-#         start += 1
-#     if out_coord_system[1] == "fully-closed":
-#         end -= 1
-#     if out_rev == "rev_strand" and strand < 0:
-#         start, end = invert_coords(start, end, src_size, out_format)
-
-#     return start, end
-
-
-# based i closed sprowadza sie tylko do tego, że przysplicowaniu w pythonie:
-# dla + strand [start - based, end +1 if fully-closed]
-# wtedy długość to ...
-# dla - strand 
-
-# class SourceSeq:
-#     """
-#     Represents a bigger Source fragment the sequences (BaseSeq) are positioned on.
-#     Usually a chromosome or a contig
-#     """
-#     def __init__(self, id: int, seq_name: str, size: int, seq: str = ""):
-#         self.id = id
-#         self.name = seq_name
-#         self.size = size
-#         self.seq = seq
-    
-#     def get_genome_name(self, sep="."):
-#         return self.name.split(".")[0]
-    
 class BaseSeq:
     """
     Represent a genomic sequence as a fragment of bigger Source fragment
@@ -476,10 +294,37 @@ class SeqCollection:
         # return SeqCollection(self.id, list(seq_dict.values()))
         return res_coll
 
-    def to_MAF_block(self, chr_names = None):
+    def align_sequences(self, out_dir = "."):
+        '''
+        returns an alignment of sequences in synteny block
+        '''
+        sequences_to_aln = [seq for seq in self.sequences]
+
+        fasta_name = os.path.join(out_dir, "sequences.fasta")
+        # SeqIO.write(sequences, fasta_file, "fasta")
+        fasta_file = open(fasta_name, "w")
+        for seq in sequences_to_aln:
+            fasta_file.write(">" + seq.seq_name +"\n")
+            fasta_file.write(seq.seq.replace("-", "") + "\n")
+        fasta_file.close()
+        cmdline=["mafft",fasta_name]
+        proc = subprocess.run(cmdline,capture_output=True,text=True)
+        alignment = proc.stdout
+        # print(alignment)
+        os.remove(fasta_name)
+
+        aligned_seqs = parse_mafft_output(alignment)
+        # print(aligned_seqs)
+        for i in range(len(sequences_to_aln)):
+            sequences_to_aln[i].seq = aligned_seqs[i]
+
+    def to_MAF_block(self, chr_names = None, align = False):
         """
         return a string representing block in MAF format
         """
+        if align:
+            self.align_sequences()
+
         seq_lens = np.array([len(seq.seq) for seq in self.sequences])
         # seqs_refound = [seq.refound for seq in self.sequences]
         assert all(seq_lens == seq_lens[0]), f"{seq_lens},"
@@ -504,20 +349,6 @@ class SeqCollection:
         
         return maf_str
     
-    def get_alignment(self):
-        pass
-
-    # def convert_coord_system(self, out_format):
-    #     assert out_format in FORMATS_COORD_SYSTEMS
-    #     new_seqs = set()
-    #     for seq in self.sequences:
-    #         seq.convert_coords(out_format)
-    #         res_seq = seq
-    #         # print(res_seq)
-    #         new_seqs.add(res_seq)
-    #     self.sequences = new_seqs
-    #     # print(self.sequences)
-
     def convert_coord_system(self, out_format):
         assert out_format in FORMATS_COORD_SYSTEMS
         res_seq_coll = copy.deepcopy(self)
