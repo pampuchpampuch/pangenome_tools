@@ -8,6 +8,7 @@ from pgtools.pangenome import Pangenome
 import os
 import argparse
 from tqdm import tqdm
+import numpy as np 
 
 def trim_overlap(s1, s2):
     if intersection_len((s1.start, s1.end), (s2.start, s2.end)) == 0:
@@ -66,10 +67,6 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
 
     # print(len(overlapping_pairs))
     # clean within block overlaps
-    for block in pangenome_obj.seq_collections:
-        clean_block(block)
-        
-        
     all_sequences = []
     # blocks_subset = deepcopy(list(maf.seq_collections)[:500])
     for block in pangenome_obj.seq_collections:
@@ -77,8 +74,9 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         for seq in block.sequences:
             all_sequences.append(seq)
             
+    print("Finding overlaps")
     overlapping_pairs = {}
-    for s1, s2 in combinations(all_sequences,2):
+    for s1, s2 in tqdm(combinations(all_sequences,2)):
         inter_len = 0
         if s1.seq_name != s2.seq_name:
             continue
@@ -86,9 +84,38 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         if inter_len > 0:
             # print(s1, s2)
             overlapping_pairs[(s1, s2)] = inter_len
+    trimmed_blocks = []
+    for seq_pair in overlapping_pairs:
+        for s in seq_pair:
+            trimmed_blocks.append(s.cluster_id) 
+
+    # print("Checking and optionally trimming within block overlaps")
+    # for block in tqdm(pangenome_obj.seq_collections):
+    #     clean_block(block)
+        
+        
+    # all_sequences = []
+    # # blocks_subset = deepcopy(list(maf.seq_collections)[:500])
+    # for block in pangenome_obj.seq_collections:
+    #     # print(block.id)
+    #     for seq in block.sequences:
+    #         all_sequences.append(seq)
+            
+    # overlapping_pairs = {}
+    # print("Finding overlaps after cleaning blocks")
+    # for s1, s2 in tqdm(combinations(all_sequences,2)):
+    #     inter_len = 0
+    #     if s1.seq_name != s2.seq_name:
+    #         continue
+    #     inter_len = intersection_len((s1.start, s1.end), (s2.start, s2.end))
+    #     if inter_len > 0:
+    #         # print(s1, s2)
+    #         overlapping_pairs[(s1, s2)] = inter_len
             
     sorted_pairs = sorted(list(overlapping_pairs), key=lambda x: overlapping_pairs[x], reverse=True)
-    for s1, s2 in sorted_pairs:
+
+    print("Trimming sequences overlaps")
+    for s1, s2 in tqdm(sorted_pairs):
         trim_overlap(s1, s2)
         
     new_blocks_dict = {}
@@ -110,10 +137,10 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
     pangenome_obj_new = pangenome_obj_new.convert_coords_system(old_coord_sys)
 
     if return_trimmed_ids:
-        trimmed_blocks = []
-        for seq_pair in overlapping_pairs:
-            for s in seq_pair:
-                trimmed_blocks.append(s.cluster_id)       
+        # trimmed_blocks = []
+        # for seq_pair in overlapping_pairs:
+        #     for s in seq_pair:
+        #         trimmed_blocks.append(s.cluster_id)       
         return pangenome_obj_new, trimmed_blocks
     
     return pangenome_obj_new
@@ -149,8 +176,10 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
-    # small_maf_0 = maf_parser.MAF(list(maf.seq_collections)[:500])
+    maf = maf_parser.MAF(list(maf.seq_collections))
 
+
+    # maf.to_MAF("first.maf")
     # small_maf = deepcopy(small_maf_0)
     maf_trimmed, trimmed_block_ids = trimm_overlaps_maf(maf, return_trimmed_ids=True)
 
@@ -160,8 +189,8 @@ def main():
     # overlap_2 = get_overlapping_pairs(maf_trimmed)
     # print("over 1", len(overlap_2))
 
-    blocks_dict = maf_trimmed.get_seq_collections_dict()
-    print("n trimmed blocks", len(trimmed_block_ids))
+    # blocks_dict = maf_trimmed.get_seq_collections_dict()
+    # print("n trimmed blocks", len(trimmed_block_ids))
     # trimmed_block = blocks_dict[trimmed_block_ids[0]]
     # print(trimmed_block.to_MAF_block(align = True))   
     # for id in trimmed_block_ids:
@@ -170,8 +199,13 @@ def main():
 
     # print(maf_trimmed.coord_system)
 
+    print("Aligning trimmed blocks")
     for block in tqdm(maf_trimmed.seq_collections):
-        block.align_sequences()
+        if block.id in trimmed_block_ids:
+            block.align_sequences()
+            # seq_lens = np.array([len(seq.seq) for seq in block.sequences])
+            # seqs_refound = [seq.refound for seq in self.sequences]
+            # assert all(seq_lens == seq_lens[0]), f"{block.id},{seq_lens},"     
 
     maf_trimmed.to_MAF(args.maf_out)
 

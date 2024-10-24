@@ -327,7 +327,7 @@ class SeqCollection:
 
         seq_lens = np.array([len(seq.seq) for seq in self.sequences])
         # seqs_refound = [seq.refound for seq in self.sequences]
-        assert all(seq_lens == seq_lens[0]), f"{seq_lens},"
+        assert all(seq_lens == seq_lens[0]), f"{self.id},{seq_lens},"
         seq_dict = self.get_seq_dict()
         # if self.aligned:
 
