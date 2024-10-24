@@ -306,13 +306,17 @@ class SeqCollection:
         for seq in sequences_to_aln:
             fasta_file.write(">" + seq.seq_name +"\n")
             fasta_file.write(seq.seq.replace("-", "") + "\n")
+            fasta_file.flush()
         fasta_file.close()
         cmdline=["mafft",fasta_name]
         proc = subprocess.run(cmdline,capture_output=True,text=True)
         alignment = proc.stdout
         # print(alignment)
         # os.remove(fasta_name)
-        print(alignment)
+        # print(alignment)
+        mafft_out = open("mafft.out", "w")
+        mafft_out.write(alignment)
+        mafft_out.close()
         aligned_seqs = parse_mafft_output(alignment)
         # print(aligned_seqs)
         for i in range(len(sequences_to_aln)):
