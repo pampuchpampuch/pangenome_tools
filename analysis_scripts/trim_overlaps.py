@@ -74,9 +74,33 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         for seq in block.sequences:
             all_sequences.append(seq)
             
+    print("getting sequence pairs")
+    all_pairs_idx = list(combinations(list(range(len(all_sequences))),2))
+
+    # this implementation was really slow, only combinations within contigs needed, changing approach
+
+    contig_sequences_dict = {}
+    for seq_idx, seq in enumerate(all_sequences):
+        if seq.seq_name in contig_sequences_dict:
+            contig_sequences_dict[seq.seq_name].append(seq_idx)
+        else:
+            contig_sequences_dict[seq.seq_name] = [seq_idx]
+    
+    same_contig_pairs_idx = []
+    for contig, seq_idxs in contig_sequences_dict.items():
+        same_contig_pairs_idx += list(combinations(seq_idxs, 2))
+
+    # #filtering, so only pairs from same contig are later checked
+    # same_contig_pairs_idx = []
+    # for s1_idx, s2_idx in all_pairs_idx:
+    #     if all_sequences[s1_idx].seq_name == all_sequences[s2_idx].seq_name:
+    #         same_contig_pairs_idx.append((s1_idx, s2_idx))
+
     print("Finding overlaps")
     overlapping_pairs = {}
-    for s1, s2 in tqdm(list(combinations(all_sequences,2))):
+    for s1_idx, s2_idx in tqdm(same_contig_pairs_idx):
+        s1 = all_sequences[s1_idx]
+        s2 = all_sequences[s2_idx]
         inter_len = 0
         if s1.seq_name != s2.seq_name:
             continue
@@ -176,6 +200,7 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
+    # maf = maf_parser.MAF(list(maf.seq_collections)[:500])
     maf = maf_parser.MAF(list(maf.seq_collections))
 
 
@@ -198,11 +223,18 @@ def main():
     #     break
 
     # print(maf_trimmed.coord_system)
-
-    print("Aligning trimmed blocks")
+    blocks_to_align = []
     for block in tqdm(maf_trimmed.seq_collections):
         if block.id in trimmed_block_ids:
-            block.align_sequences()
+            blocks_to_align.append(block)
+    print("Aligning blocks if needed")
+    for block in tqdm(blocks_to_align):
+        # if block.id in trimmed_block_ids:
+        block.align_sequences()
+
+    # for block in tqdm(maf_trimmed.seq_collections):
+    #     if block.id in trimmed_block_ids:
+    #         block.align_sequences()
             # seq_lens = np.array([len(seq.seq) for seq in block.sequences])
             # seqs_refound = [seq.refound for seq in self.sequences]
             # assert all(seq_lens == seq_lens[0]), f"{block.id},{seq_lens},"     
