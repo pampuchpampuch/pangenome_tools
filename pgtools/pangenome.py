@@ -311,7 +311,7 @@ class SeqCollection:
         proc = subprocess.run(cmdline,capture_output=True,text=True)
         alignment = proc.stdout
         # print(alignment)
-        os.remove(fasta_name)
+        # os.remove(fasta_name)
 
         aligned_seqs = parse_mafft_output(alignment)
         # print(aligned_seqs)

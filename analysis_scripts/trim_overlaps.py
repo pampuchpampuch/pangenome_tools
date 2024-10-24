@@ -147,6 +147,9 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         
     new_blocks_dict = {}
     for seq in all_sequences:
+        # if whole sequence was trimmed - do not include
+        if seq.start >= seq.end:
+            continue
         if seq.cluster_id in new_blocks_dict:
             new_blocks_dict[seq.cluster_id].add(seq)
         else:
@@ -203,8 +206,8 @@ def main():
     maf = args.maf
     maf = maf_parser.parse_maf(maf, store_seqs=True)
 
-    maf = maf_parser.MAF(list(maf.seq_collections)[:500])
-    # maf = maf_parser.MAF(list(maf.seq_collections))
+    # maf = maf_parser.MAF(list(maf.seq_collections)[:500])
+    maf = maf_parser.MAF(list(maf.seq_collections))
 
 
     # maf.to_MAF("first.maf")
