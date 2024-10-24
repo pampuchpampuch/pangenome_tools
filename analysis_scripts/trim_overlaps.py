@@ -25,17 +25,17 @@ def trim_overlap(s1, s2):
     # there is overlap and we want to trim the shorter sequence: 
     if shorter_seq.start < longer_seq.start:
         # longer seq is behind shorter seq - we want to trimm the end of shorter seq
-        shorter_seq.end -= (inter_len + 1)
+        shorter_seq.end -= (inter_len + 2)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len - 1]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[:-inter_len - 2]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1 :]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 2 :]
     else:
-        shorter_seq.start += (inter_len + 1)
+        shorter_seq.start += (inter_len + 2)
         if shorter_seq.strand > 0:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 1:]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[inter_len + 2:]
         else:
-            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len - 1]
+            shorter_seq.seq = shorter_seq.seq.replace("-","")[: -inter_len - 2]
 
 def clean_block(block):
     for s1, s2 in combinations(block.sequences,2):
@@ -144,6 +144,8 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
         
     new_blocks_dict = {}
     for seq in all_sequences:
+        if seq.start >= seq.end:
+            continue
         if seq.cluster_id in new_blocks_dict:
             new_blocks_dict[seq.cluster_id].add(seq)
         else:
