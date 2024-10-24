@@ -76,7 +76,7 @@ def trimm_overlaps_maf(pangenome_obj, return_trimmed_ids = False) -> Pangenome:
             
     print("Finding overlaps")
     overlapping_pairs = {}
-    for s1, s2 in tqdm(combinations(all_sequences,2)):
+    for s1, s2 in tqdm(list(combinations(all_sequences,2))):
         inter_len = 0
         if s1.seq_name != s2.seq_name:
             continue
