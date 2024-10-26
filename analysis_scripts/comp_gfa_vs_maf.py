@@ -213,7 +213,7 @@ def gfa_vs_maf(gfa, maf, contig_pairs, csv_out, overlap_threshold = 0.6, sym_inv
                 # freq = (sum(contained_lens[0]) + sum(contained_lens[1])) / sum(all_lens) * 2
                 # freq = ((sum(contained_lens[0]) / sum(all_lens)) + (sum(contained_lens[1]) / sum(all_lens)))/2
                 # freq = sum(cont_lens) / sum(all_lens)
-                freq = sum(cont_lens/len(cont_lens))
+                freq = sum(cont_lens)/len(cont_lens)
             cont_freqs.append(freq)
         # print("==================")
         # print(not_contained_lens)
