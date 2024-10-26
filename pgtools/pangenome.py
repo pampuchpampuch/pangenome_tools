@@ -575,7 +575,8 @@ class Pangenome:
     def map_to_gff(self, gff_dir, overlap_threshold = 0.8, sep="."):
         if not self.coord_system == "gff":
             old_coord_cystem = self.coord_system
-            self.convert_coords_system("gff")
+            self.seq_collections = self.convert_coords_system("gff").seq_collections
+            self.coord_system = "gff"
         
         simple_gffs = parse_GFFs_dir(gff_dir)
         genome_cds_coords = simple_gffs.get_genome_cds_coords_dict()
@@ -598,7 +599,8 @@ class Pangenome:
                 # print("from_panaroo",seq.annotation_ids)
                 # print("mapped",[annot.annotation_id for annot in seq.mapped_annotations])
             # print("-"*40)
-        self.convert_coords_system(old_coord_cystem)
+        self.seq_collections = self.convert_coords_system(old_coord_cystem).seq_collections
+        self.coord_system = old_coord_cystem
 
     def annotations_to_csv(self, gff_dir, csv_name = "annotations_summary.csv", overlap_threshold = 0.7):
         res_csv = open(csv_name, "w")
