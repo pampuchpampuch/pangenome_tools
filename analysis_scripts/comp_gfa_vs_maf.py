@@ -100,6 +100,7 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
             # in_block = False
             # print(V)
             gff_vert_len = V[0][1]-V[0][0]+1
+            cont_lens = [[],[]]
             for block in maf_blocks[strandness]:
                 """
                 TU JEST ~BŁĄD   
@@ -109,8 +110,8 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
                 # all_lens.append(gff_vert_len)
                 inter_len_1 = intersection_len(V[0], block[0])
                 inter_len_2 = intersection_len(V[1], block[1])
-                contained_lens[0].append(inter_len_1)
-                contained_lens[1].append(inter_len_2)
+                cont_lens[0].append(inter_len_1)
+                cont_lens[1].append(inter_len_2)
                 # """
                 # TU JEST ~BŁĄD   
                 # czasem gfa może być rozłożony na kilka bloków mafa - wtedy kilka pojedynczych fragmentów dzielimy
@@ -121,7 +122,11 @@ def vertices_freq(maf_blocks, gfa_verticles, threshold = 0.7):
             jak już pozbiramy wszystkie możliwe overlapy - dodajemy do all lens
             MOŻE TU POWINNAŚ JUŻ UŚREDNIĆ???? i potem podzielić przez liczbę wierzchołków dla pary
             """
+            contained_lens[0].append(sum(cont_lens[0])/gff_vert_len)
+            contained_lens[1].append(sum(cont_lens[1])/gff_vert_len)
+
             all_lens.append(gff_vert_len)
+
 
                 # if (inter_len_1 >= threshold * gff_vert_len) and (inter_len_2 >= threshold * gff_vert_len):
                 #     ### TODO how to average that
@@ -207,7 +212,8 @@ def gfa_vs_maf(gfa, maf, contig_pairs, csv_out, overlap_threshold = 0.6, sym_inv
             else: 
                 # freq = (sum(contained_lens[0]) + sum(contained_lens[1])) / sum(all_lens) * 2
                 # freq = ((sum(contained_lens[0]) / sum(all_lens)) + (sum(contained_lens[1]) / sum(all_lens)))/2
-                freq = sum(cont_lens) / sum(all_lens)
+                # freq = sum(cont_lens) / sum(all_lens)
+                freq = sum(cont_lens/len(cont_lens))
             cont_freqs.append(freq)
         # print("==================")
         # print(not_contained_lens)

@@ -374,6 +374,12 @@ class SeqCollection:
         res_seq_coll.sequences = new_seqs
         return res_seq_coll
         # print(self.sequences)
+    
+    def get_mean_len(self):
+        return sum([len(seq) for seq in self.sequences])/len(self)
+    
+    def get_size(self):
+        return len(self)
 
 class Pangenome:
     ### TODO genome lens
@@ -707,6 +713,47 @@ class Pangenome:
                             print(cluster_paths)
 
         return cluster_paths
+    
+    def get_block_sizes_count(self):
+        size_counter = {}
+        for block in self.seq_collections:
+            block_size = block.get_size()
+            if block_size in size_counter:
+                size_counter[block_size] += 1
+            else:
+                size_counter[block_size] = 1
+        return size_counter
+    
+    def block_sizes_csv(self, csv_out="blocks_sizes.csv"):
+        csv_res = open(csv_out, "w")
+        csv_res.write("block size,blocks count\n")
+        size_counter = self.get_block_sizes_count()
+        for size_, count_ in size_counter.items():
+            csv_res.write(f"{size_},{count_}\n")
+            csv_res.flush()
+
+        csv_res.close()
+    
+    def get_block_lens_count(self):
+        lens_counter = {}
+        for block in self.seq_collections:
+            mean_len = round(block.get_mean_len())
+            if mean_len in lens_counter:
+                lens_counter[mean_len] += 1
+            else:
+                lens_counter[mean_len] = 1
+        return lens_counter
+
+    def block_lens_csv(self, csv_out="blocks_lens.csv"):
+        csv_res = open(csv_out, "w")
+        csv_res.write("block mean seq len,blocks count\n")
+        lens_counter = self.get_block_lens_count()
+        for len_, count_ in lens_counter.items():
+            csv_res.write(f"{len_},{count_}\n")
+            csv_res.flush()
+
+        csv_res.close()
+                
 
     def get_genome_str_presence_absence(self, genome):
         pass
