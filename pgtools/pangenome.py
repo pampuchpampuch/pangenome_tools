@@ -602,10 +602,13 @@ class Pangenome:
         self.seq_collections = self.convert_coords_system(old_coord_cystem).seq_collections
         self.coord_system = old_coord_cystem
 
-    def annotations_to_csv(self, gff_dir, csv_name = "annotations_summary.csv", overlap_threshold = 0.7):
-        res_csv = open(csv_name, "w")
-        res_csv.write("cluster id,cluster size,core status,seq name,mapped annotations\n")
+    def annotations_to_csv(self, gff_dir, csv_seqs_name = "sequences_summary.csv",csv_annots_name = "annotations_summary.csv", overlap_threshold = 0.7):
+        res_csv = open(csv_seqs_name, "w")
+        res_csv.write("cluster id,cluster size,core status,seq name,seq start,seq end,seq strand,mapped annotations\n")
         res_csv.flush()
+        annots_csv = open(csv_annots_name, "w")
+        annots_csv.write("seq name,annotation ID,start,end,strand\n")
+        annots_csv.flush()
         self.detect_soft_core()
         self.map_to_gff(gff_dir, overlap_threshold=overlap_threshold)
         for seq_coll in self.seq_collections:
@@ -616,9 +619,13 @@ class Pangenome:
                 # annotation len is also an iimportant aspect, but can be easily retrived from gff file
                 # print(seq.seq_name, [ann.annotation_id for ann in seq.mapped_annotations], seq_coll.soft_core)
                 annots = ";".join([ann.annotation_id for ann in seq.mapped_annotations])
-                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{annots}\n")                
+                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{seq.start},{seq.end},{seq.strand},{annots}\n")                
                 res_csv.flush()
+                for annot in seq.mapped_annotations:
+                    annots_csv.write(f"{seq.seq_name},{annot.annotation_id},{annot.start},{annot.end},{annot.strand}\n")
+                    annots_csv.flush()
         res_csv.close()
+        annots_csv.close()
 
     def get_sequence_adjecency_dict(self):
         """
@@ -710,11 +717,18 @@ class Pangenome:
                         # cluster_paths.append(path_)
                         for i in range(0, len(path_) - 2):
                             # cluster_paths.add(tuple(path_[i:i+3]))
-                            cluster_paths.append(tuple(path_[i:i+3]))
+                            if not tuple(path_[i:i+3]) in cluster_paths:
+                                cluster_paths.append(tuple(path_[i:i+3]))
 
-                            print(cluster_paths)
+                            # print(cluster_paths)
 
         return cluster_paths
+    
+    def get_panaroo_annotaion_triplets(self, gff_dir):
+        self.map_to_gff(gff_dir)
+        cluster_triplets = self.get_panaroo_cluster_triplets()
+        seq_coll_dict = self.get_seq_collections_dict()
+
     
     def get_block_sizes_count(self):
         size_counter = {}
