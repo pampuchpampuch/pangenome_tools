@@ -42,16 +42,24 @@ def main():
     parser = argparse.ArgumentParser(description="Writes annotation info into csv")
     parser.add_argument("maf",
                         help="path to the maf file")
-
-    parser.add_argument("csv_out",
+    parser.add_argument("gff_dir",
+                        help="dir with gff files")
+    parser.add_argument("seqs_summary_out",
                         help="csv output file")
+    parser.add_argument("annots_out",
+                        help="csv output file")
+    parser.add_argument("triplets_csv_out",
+                        help="csv output file")
+    parser.add_argument("--overlap_threshold", default=0.7, dest="overlap_threshold", type=float,
+                        help="section of sequences that have to overlap to consider them mapped to annotation")
+
 
     args = parser.parse_args()
 
     maf = parse_maf(args.maf, store_seqs=False)
     # maf = MAF(list(maf.seq_collections)[:100])
-    # maf.annotations_to_csv(args.gff_dir, csv_seqs_name=args.seqs_summary_out, csv_annots_name=args.annots_out, overlap_threshold=args.overlap_threshold)
-    triplets = maf.triplets_to_csv(args.csv_out)
+    maf.triplets_to_csv(args.triplets_csv_out)
+    maf.annotations_to_csv(args.gff_dir, csv_seqs_name=args.seqs_summary_out, csv_annots_name=args.annots_out, overlap_threshold=args.overlap_threshold)
 
 if __name__ == "__main__":
     main()
