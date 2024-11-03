@@ -724,6 +724,15 @@ class Pangenome:
 
         return cluster_paths
     
+    def triplets_to_csv(self, csv_out):
+        triplets = self.get_panaroo_cluster_triplets()
+        csv_out = open(csv_out, "w")
+        csv_out.write("triplet\n")
+        for triplet in triplets:
+            csv_out.write(f'{"-".join(map(str, triplet))}\n')
+            csv_out.flush()
+        csv_out.close()
+
     def get_panaroo_annotaion_triplets(self, gff_dir):
         self.map_to_gff(gff_dir)
         cluster_triplets = self.get_panaroo_cluster_triplets()
