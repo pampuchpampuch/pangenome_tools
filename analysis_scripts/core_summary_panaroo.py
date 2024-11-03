@@ -44,11 +44,13 @@ def main():
                         help="path to panaroo output")
     parser.add_argument("gff_dir",
                         help="dir with gff files")
-    parser.add_argument("csv_out",
+    parser.add_argument("csv_out_seqs",
+                        help="csv output file")
+    parser.add_argument("csv_out_annots",
                         help="csv output file")
     args = parser.parse_args()
 
     panaroo_obj = panaroo_parser.parse_panaroo_output(args.panaroo_dir, args.gff_dir)
-    panaroo_obj.assigned_annotations_to_csv(args.gff_dir, csv_name=args.csv_out)
+    panaroo_obj.assigned_annotations_to_csv(args.gff_dir, csv_seqs_name=args.csv_out_seqs, csv_annots_name=args.csv_out_annots)
 if __name__ == "__main__":
     main()

@@ -82,10 +82,13 @@ class Panaroo(Pangenome):
 
         return clust_id_mapping
     
-    def assigned_annotations_to_csv(pg, gff_dir, csv_name = "panaroo_annotations_summary.csv"):
-        res_csv = open(csv_name, "w")
-        res_csv.write("cluster name,cluster size,core status,seq name,CDS\n")
+    def assigned_annotations_to_csv(pg, gff_dir, csv_seqs_name = "panaroo_sequences_summary.csv", csv_annots_name = "panaroo_annotations_summary.csv"):
+        res_csv = open(csv_seqs_name, "w")
+        res_csv.write("cluster name,cluster size,core status,seq name,seq name,seq start,seq end,seq strand,CDS\n")
         res_csv.flush()
+        annots_csv = open(csv_annots_name, "w")
+        annots_csv.write("seq name,annotation ID\n")
+        annots_csv.flush()
         pg.detect_soft_core()
         # pg.map_to_gff(gff_dir)
         for seq_coll in pg.seq_collections:
@@ -96,8 +99,11 @@ class Panaroo(Pangenome):
                 # annotation len is also an iimportant aspect, but can be easily retrived from gff file
                 # print(seq.seq_name, [ann.annotation_id for ann in seq.mapped_annotations], seq_coll.soft_core)
                 annots = ";".join([ann_id for ann_id in seq.annotation_ids])
-                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{annots}\n")
+                res_csv.write(f"{id},{clust_size},{core_status},{seq.seq_name},{seq.start},{seq.end},{seq.strand},{annots}\n")
                 res_csv.flush()
+                for annot in seq.annotation_ids:
+                    annots_csv.write(f"{seq.seq_name},{annot}\n")
+                    annots_csv.flush()
         res_csv.close()
     
 def strand_rep(strand_sign):
