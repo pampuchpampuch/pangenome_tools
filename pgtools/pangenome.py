@@ -572,6 +572,22 @@ class Pangenome:
 
         out_file.close()
 
+    def to_GFF(self, out_file):
+        if not self.coord_system == "gff":
+            self.seq_collections = self.convert_coords_system("gff").seq_collections
+            self.coord_system = "gff"
+        
+        out_file = open(out_file, "w")
+        for seq_coll in self.seq_collections:
+            coll_id = seq_coll.id
+            core_stat = seq_coll.soft_core
+            for seq in seq_coll.sequences:
+                strand_sign = "+" if seq.strand > 0 else "-"
+                out_file.write(f"{seq.seq_name}\tunidentified\tunidentified\t{seq.start}\t{seq.end}\t.\t{strand_sign}\t0\tcluster_id={coll_id};core_status={core_stat}\n")
+        
+        out_file.close()
+
+
     def map_to_gff(self, gff_dir, overlap_threshold = 0.8, sep="."):
         if not self.coord_system == "gff":
             old_coord_cystem = self.coord_system

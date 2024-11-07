@@ -105,6 +105,13 @@ class Panaroo(Pangenome):
                     annots_csv.write(f"{seq.seq_name},{annot}\n")
                     annots_csv.flush()
         res_csv.close()
+
+    def get_cluster_edges(self):
+        res_edges = []
+        for clst1, clst2 in self.graph.edges():
+            res_edges.append((self.graph.nodes[clst1]['name'], self.graph.nodes[clst2]['name']))
+
+        return res_edges
     
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -191,7 +198,7 @@ def parse_gene_data(gene_data_path):
 
     return genes_dict
 
-def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], cluster_id: int, include_refound = True, set_soft_core:typing.Set[str] = False) -> PanarooCluster:
+def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffolds_dict: typing.Dict[str, Scaffold], genes_dict: typing.Dict[str, PanarooCsvInfo], cluster_id: int, include_refound = True, set_soft_core:typing.Set[str] = False, store_seqs=True) -> PanarooCluster:
     """
     Parses one Panaroo cluster (based on output files
     in the panaroo aligned_gene_sequences)
@@ -210,6 +217,8 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
         for record in SeqIO.parse(handle, "fasta"):
             seq_name, clustering_id = record.id.split(";")
             seq = record.seq
+            if not store_seqs:
+                seq = ""
             seq_lens.append(len(seq))
             if seq_name[:3] == "_R_":
                 # print("R")
@@ -287,7 +296,7 @@ def parse_panaroo_aln(aln_file: str, gff_dict: typing.Dict[str, GffCDS], scaffol
 
         return PanarooCluster(cluster_id, panaroo_genes, cluster_name = clst_name, is_soft_core = is_soft_core)
 
-def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True, detect_core = True) -> Panaroo:
+def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True, detect_core = True, store_seqs=True) -> Panaroo:
     """
     Parses panaroo output
     """
@@ -314,9 +323,9 @@ def parse_panaroo_output(panaroo_dir: str, gffs_dir: str, include_refound = True
     for aln_file in os.listdir(aln_files_dir):
         aln_file = os.path.join(aln_files_dir,aln_file)
         if not detect_core:
-            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound)
+            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound, store_seqs=store_seqs)
         else:
-            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound, set_soft_core=soft_core_cluster_names)
+            pan_clust = parse_panaroo_aln(aln_file, gff_dict, scaffolds_dict, genes_dict, clust_id, include_refound=include_refound, set_soft_core=soft_core_cluster_names, store_seqs=store_seqs)
         panaroo_clusters.append(pan_clust)
         clust_id += 1
     

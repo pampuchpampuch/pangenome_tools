@@ -241,3 +241,14 @@ def parse_GFFs_dir(GFFs_dir, gff_simple = True):
         return Pangenome_Gffs(all_gff.values())
     return all_gff
 
+
+def scaffolds_from_GFFs_dir(GFFs_dir):
+    """
+    parses all gff files in a given directory
+    """
+    all_gff = {}
+    for f in os.listdir(GFFs_dir):
+        if f.endswith(".gff"):
+            gff_obj = parse_gff(os.path.join(GFFs_dir, f), store_sequences=True)
+            all_gff[gff_obj.genome] = gff_obj.scaffolds
+    return all_gff
