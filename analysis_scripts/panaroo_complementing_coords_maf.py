@@ -102,13 +102,13 @@ def maf_new_blocks(panaroo_obj, maf_out):
             else:
                 new_blocks[0].append(new_seq)
 
-        if len(new_blocks[0]) or len(new_blocks[1]):
-            clust_ids = ids.split("-")
-            for c_id in clust_ids:
-                block = clusters_dict[c_id]
-                res_maf.write(f"#ORIGINAL:{c_id}\n")
-                res_maf.write(block.to_MAF_block())
-                res_maf.flush()
+        # if len(new_blocks[0]) or len(new_blocks[1]):
+        #     clust_ids = ids.split("-")
+        #     for c_id in clust_ids:
+        #         block = clusters_dict[c_id]
+        #         res_maf.write(f"#ORIGINAL:{c_id}\n")
+        #         res_maf.write(block.to_MAF_block())
+        #         res_maf.flush()
         for B in new_blocks:
             # print(B)
             if len(B) > 1:
