@@ -1,6 +1,7 @@
 import argparse
 from pgtools import maf_parser, gff_parser
 from Bio.Seq import Seq
+import tqdm
 
 def main():
     parser = argparse.ArgumentParser()
@@ -43,10 +44,10 @@ def main():
 
     maf_out = args.maf_out
     res_maf = open(maf_out, "w")
-    for block in new_maf.seq_collections:
-        maf_out.write(block.to_MAF_block(align=True))
-        maf_out.flush()
-    maf_out.close()
+    for block in tqdm(new_maf.seq_collections):
+        res_maf.write(block.to_MAF_block(align=True))
+        res_maf.flush()
+    res_maf.close()
 
 if __name__ == "__main__":
     main()
