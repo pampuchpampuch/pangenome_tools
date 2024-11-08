@@ -30,7 +30,7 @@ def main():
             seq_scaff = all_scaffs[seq.get_genome_name()][seq.get_contig_name()]
             if seq.strand < 0:
                 seq_scaff = Seq(seq_scaff)
-                seq_scaff = seq_scaff.reverse_complement()
+                seq_scaff = seq_scaff.reverse_complement().seq
                 # seq_scaff = seq_scaff
             seq_scaff = seq_scaff[seq.start:seq.end]
             seq.seq = seq_scaff
@@ -44,7 +44,7 @@ def main():
 
     maf_out = args.maf_out
     res_maf = open(maf_out, "w")
-    for block in tqdm(new_maf.seq_collections):
+    for block in tqdm(list(new_maf.seq_collections)):
         res_maf.write(block.to_MAF_block(align=True))
         res_maf.flush()
     res_maf.close()
