@@ -1,7 +1,7 @@
 import argparse
 from pgtools import maf_parser, gff_parser
 from Bio.Seq import Seq
-import tqdm
+from tqdm import tqdm
 
 def main():
     parser = argparse.ArgumentParser()
