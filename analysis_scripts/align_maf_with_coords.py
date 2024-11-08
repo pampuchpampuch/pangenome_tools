@@ -25,9 +25,9 @@ def main():
 
             # print(all_scaffs[seq.get_genome_name()][seq.get_contig_name()][:3])
             # seq_scaff = all_scaffs[seq.get_genome_name()][seq.get_contig_name()][seq.start:seq.end]
-            if not seq.get_genome_name() in all_scaffs:
-                continue
-            seq_scaff = all_scaffs[seq.get_genome_name()][seq.get_contig_name()]
+            # if not seq.get_genome_name() in all_scaffs:
+            #     continue
+            seq_scaff = all_scaffs[seq.seq_name]
             if seq.strand < 0:
                 seq_scaff = Seq(seq_scaff)
                 seq_scaff = str(seq_scaff.reverse_complement())
