@@ -250,5 +250,5 @@ def scaffolds_from_GFFs_dir(GFFs_dir):
     for f in os.listdir(GFFs_dir):
         if f.endswith(".gff"):
             gff_obj = parse_gff(os.path.join(GFFs_dir, f), store_sequences=True)
-            all_gff[gff_obj.genome] = gff_obj.scaffolds
+            all_gff[gff_obj.genome] = {scaff.name: scaff.seq for scaff in gff_obj.scaffolds}
     return all_gff
