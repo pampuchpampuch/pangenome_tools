@@ -30,7 +30,7 @@ def main():
             seq_scaff = all_scaffs[seq.get_genome_name()][seq.get_contig_name()]
             if seq.strand < 0:
                 seq_scaff = Seq(seq_scaff)
-                seq_scaff = seq_scaff.reverse_complement().seq
+                seq_scaff = str(seq_scaff.reverse_complement())
                 # seq_scaff = seq_scaff
             seq_scaff = seq_scaff[seq.start:seq.end]
             seq.seq = seq_scaff
