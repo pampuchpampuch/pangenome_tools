@@ -92,7 +92,7 @@ class MAF(Pangenome):
 
         return maf_blocks
     
-    def identity_pct(self):
+    def mismatch_pct(self):
         """
         Calculates identity for each pair of sequence in each block.
         Does not distinguish between them
@@ -182,6 +182,17 @@ class SyntenyBlock(SeqCollection):
             n_gaps += n_gaps_
         
         return n_gaps, n_cols
+    
+    def mean_gap_content(self):
+        all_seqs = list(self.sequences)
+        n_seqs = len(all_seqs)
+        gap_cont = []
+        seq_len = len(all_seqs[0].seq)
+        for i in range(seq_len):
+            i_pos_char = [seq_.seq[i] for seq_ in all_seqs]
+            gap_cont.append(i_pos_char.count("-") / n_seqs)
+        
+        return sum(gap_cont) / len(gap_cont)
 
 class MAFseq(BaseSeq):
     """
