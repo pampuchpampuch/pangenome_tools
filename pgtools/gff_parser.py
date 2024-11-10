@@ -106,6 +106,7 @@ class Pangenome_Gffs:
                     all_cds_coords[f"{genome}.{scaff}"].add(cds_)
         return all_cds_coords
 
+
 class Gff:
     """
     Represents gff file content
@@ -158,13 +159,32 @@ class Gff:
         # check, if for the same genomes there are no conflicting cds and scaffold
         # ==============
     
-    def to_MAF():
-        """
-        Writes cds into maf format
-        Each seq is one block - does not make sense (no real MSA)
-        but useful for filtering
-        """
+    def scaff_lens_summary(self):
+        # pass
+        # csv_res = open(csv_out, "w")
+        # csv_res.write("Kontig,Długość\n")
+        scaff_lens = {}
+        for scaff in self.scaffolds:
+            scaff_lens[f"{scaff.genome}.{scaff.name}"] = scaff.length
+        return scaff_lens
         
+class Pangenome_Gffs_full:
+    def __init__(self, gffs: Dict[str, Gff]):
+        self.gffs = gffs
+
+    def scaff_lens_summary(self):
+        scaff_lens = {}
+        for genome, gff in self.gffs.items():
+            scaff_lens.update(gff.scaff_lens_summary())
+        return scaff_lens
+    
+    def scaff_lens_to_csv(self, csv_out):
+        csv_res = open(csv_out, "w")
+        csv_res.write("Contig,Len\n")
+        lens_summary = self.scaff_lens_summary()
+        for scaff_name, length in lens_summary.items():
+            csv_res.write(f"{scaff_name},{length}\n")
+        csv_res.close()
 
 def strand_rep(strand_sign):
     if strand_sign == "+":
@@ -252,3 +272,67 @@ def scaffolds_from_GFFs_dir(GFFs_dir):
             gff_obj = parse_gff(os.path.join(GFFs_dir, f), store_sequences=True)
             all_gff.update({gff_obj.genome + "." + scaff.name: scaff.seq for scaff in gff_obj.scaffolds})
     return all_gff
+
+class GFF_record:
+    """
+    Simplified gff record
+    """
+    def __init__(self, seq_name, start, end, strand, annot_id):
+        self.seq_name = seq_name
+        self.start = start
+        self.end = end
+        self.strand = strand
+        self.annotation_id = annot_id
+
+def parse_joined_gff(gff_path, store_sequences=False):
+    """
+    Parses gff file
+
+    Parameters:
+        gff_path: str
+            path to the gff file
+    
+    Returns:
+        Gff
+        Object containing information on scaffolds and annotations in gff file
+    """
+    # genome_name = gff_path.strip("/")[-1].strip(".")[0]
+    scaffolds_dict = {}
+    CDS = []
+    seq_block = False
+    sequence = ""
+    fasta_id = None
+    with open(gff_path) as f:
+        next(f)
+        # genome_name = gff_path.split("/")[-1][:-4]
+        for line in f:
+
+            # if line.startswith("##FASTA"):
+            #     if not store_sequences:
+            #         return Gff(list(scaffolds_dict.values()),CDS)            
+            #     else:
+            #         seq_block = True
+            #         sequence = ""
+            # # elif line.startswith("##sequence-region"):
+            # #     _, scaffold_name, _, scaffold_len = line.split()
+            # #     scaffolds_dict[scaffold_name] = Scaffold(genome_name, scaffold_name, int(scaffold_len))
+
+            # else:
+                # if not seq_block:
+            scaffold_name, _, _, start, end, _, strand, _, gene_info, *_ =line.split()
+            annotation_id = gene_info.split(";")[0][3:]
+
+            CDS.append(GFF_record(scaffold_name, int(start), int(end), strand_rep(strand), annotation_id))
+                # else:
+                #     if line.startswith(">"):
+                #         # print(line)
+                #         if sequence:
+                #             # print("seq",sequence[:50])
+                #             scaffolds_dict[fasta_id].seq = sequence
+                #             sequence = ""
+                #         fasta_id = line[1:].strip()
+                #     else:
+                #         sequence += line.strip()
+    # if sequence:
+    #     scaffolds_dict[fasta_id].seq = sequence
+    return CDS

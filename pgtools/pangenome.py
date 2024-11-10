@@ -2,7 +2,7 @@ import typing
 from itertools import product
 import numpy as np
 import copy
-from pgtools.gff_parser import parse_GFFs_dir
+from pgtools.gff_parser import parse_GFFs_dir, Pangenome_Gffs_full
 from pgtools.utils import contains
 import networkx as nx
 from Bio import SeqIO
@@ -798,3 +798,43 @@ class Pangenome:
 
     def get_genome_str_presence_absence(self, genome):
         pass
+
+    def scaffs_contained_lens_summary_csv(self, csv_out):
+        contained_lens = {}
+        for seq_coll in self.seq_collections:
+            for seq in seq_coll.sequences:
+                if seq.seq_name in contained_lens:
+                    contained_lens[seq.seq_name] += len(seq)      
+                else:
+                    contained_lens[seq.seq_name] = len(seq)
+        csv_res = open(csv_out, "w")
+        csv_res.write("Contig,sum of seq lens in model\n")
+        for scaff, sum_len in contained_lens.items():
+            csv_res.write(f"{scaff},{sum_len}\n")
+        csv_res.close()
+
+        return contained_lens
+    
+    def get_scaffolds_coverage(self, gff_dir):
+        gffs = parse_GFFs_dir(gff_dir, gff_simple=False)
+        pg_gffs = Pangenome_Gffs_full(gffs)
+
+        scaff_lens = pg_gffs.scaff_lens_summary()
+
+        contained_lens = {scaff: 0 for scaff in scaff_lens}
+        for seq_coll in self.seq_collections:
+            for seq in seq_coll.sequences:
+                contained_lens[seq.seq_name] += len(seq)
+        
+        scaff_coverages = {contained_lens[scaff] / scaff_lens[scaff] for scaff in scaff_lens}
+        return scaff_coverages
+    
+    def scaffolds_coverage_summary_csv(self, gff_dir, csv_out):
+        scaff_cover = self.get_scaffolds_coverage(gff_dir)
+        csv_res = open(csv_out, "w")
+        csv_res.write("Contig name,coverage\n")
+        for scaff, coverage in scaff_cover.items():
+            csv_res.write(f"{scaff},{coverage}\n")
+        csv_res.close()
+
+
