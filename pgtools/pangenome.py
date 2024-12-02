@@ -572,13 +572,15 @@ class Pangenome:
 
         out_file.close()
 
-    def to_GFF(self, out_file):
+    def to_GFF(self, out_file, only_core=False):
         if not self.coord_system == "gff":
             self.seq_collections = self.convert_coords_system("gff").seq_collections
             self.coord_system = "gff"
         
         out_file = open(out_file, "w")
         for seq_coll in self.seq_collections:
+            if only_core and not seq_coll.soft_core:
+                continue
             coll_id = seq_coll.id
             core_stat = seq_coll.soft_core
             for seq in seq_coll.sequences:

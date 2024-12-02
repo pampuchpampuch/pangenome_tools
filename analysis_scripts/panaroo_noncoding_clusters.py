@@ -1,4 +1,4 @@
-from pgtools import panaroo_parser
+from pgtools import panaroo_parser, maf_parser, gff_parser
 # from pgtools.gff_parser import parse_GFFs_dir, Gff, parse_gff
 from pgtools.utils import intersection_len
 from pgtools.pangenome import Pangenome
@@ -10,6 +10,7 @@ import os
 import argparse
 from tqdm import tqdm
 import numpy as np 
+from Bio.Seq import Seq
 
 def maf_new_blocks(panaroo_obj, maf_out):
     edges = panaroo_obj.get_cluster_edges()
@@ -139,6 +140,43 @@ def maf_new_blocks(panaroo_obj, maf_out):
     res_maf.close()
     return new_blocks_all
         
+def align_pseudo_maf(maf_in, gff_dir, maf_out):
+    """
+    align pseudo maf: maf without aligned sequences (each seq is "-")
+    """
+    maf_dir = maf_in
+    maf_obj = maf_parser.parse_maf(maf_dir)
+    all_scaffs = gff_parser.scaffolds_from_GFFs_dir(gff_dir)
+
+    new_blocks = []
+    for block in maf_obj.seq_collections:
+        new_block = set()
+        for seq in block.sequences:
+
+            # print(all_scaffs[seq.get_genome_name()][seq.get_contig_name()][:3])
+            # seq_scaff = all_scaffs[seq.get_genome_name()][seq.get_contig_name()][seq.start:seq.end]
+            # if not seq.get_genome_name() in all_scaffs:
+            #     continue
+            seq_scaff = all_scaffs[seq.seq_name]
+            if seq.strand < 0:
+                seq_scaff = Seq(seq_scaff)
+                seq_scaff = str(seq_scaff.reverse_complement())
+                # seq_scaff = seq_scaff
+            seq_scaff = seq_scaff[seq.start:seq.end]
+            seq.seq = seq_scaff
+            new_block.add(seq)
+            # seq_0 = seq.seq.replace("-","")
+            # assert len(seq_scaff) == len(seq_0), f"{seq_0}, {seq_scaff}"
+        new_blocks.append(maf_parser.SyntenyBlock(new_block))
+    # break
+    
+    new_maf = maf_parser.MAF(new_blocks)
+
+    res_maf = open(maf_out, "w")
+    for block in tqdm(list(new_maf.seq_collections)):
+        res_maf.write(block.to_MAF_block(align=True))
+        res_maf.flush()
+    res_maf.close()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -149,7 +187,9 @@ def main():
     args = parser.parse_args()
 
     panaroo_obj = panaroo_parser.parse_panaroo_output(args.panaroo_dir, args.gff_dir)
-    new_blocks = maf_new_blocks(panaroo_obj, args.maf_out)
+    PSEUDO_MAF = "coords_only.maf"
+    new_blocks = maf_new_blocks(panaroo_obj, PSEUDO_MAF)
+    align_pseudo_maf(PSEUDO_MAF, args.gff_dir, args.maf_out)
     # edges = panaroo_obj.get_cluster_edges()
     # print(edges[:4])
     # clusters_dict = panaroo_obj.get_seq_collections_dict()

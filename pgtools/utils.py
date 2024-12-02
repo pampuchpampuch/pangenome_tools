@@ -1,4 +1,38 @@
 import numpy as np
+from pgtools import gff_parser
+import os
+import subprocess
+
+def bedtools_clean_gff(contigs_gff_path, model_gff_path, out_dir="."):
+    out_gff = os.path.join(out_dir, "not_in_model.gff")
+    run_bedtools_basic("subtract", contigs_gff_path, model_gff_path, out_gff)
+    clean_gff = os.path.join(out_dir, "model_clean.gff")
+    run_bedtools_basic("subtract", contigs_gff_path, out_gff, clean_gff)
+
+
+def bedtools_intersect_gff(gff1, gff2, out_dir=".", out_gff="intersection.gff"):
+    out_gff = os.path.join(out_dir, out_gff)
+    run_bedtools_basic("intersect", gff1, gff2, out_gff)
+
+def get_gff_sum_aggregate_lens(gff):
+    # cds_lens = {}
+    cds_lens = 0
+    gff = gff_parser.parse_joined_gff(gff)
+    for cds in gff:
+        cds_len = cds.end - cds.start + 1
+        cds_lens += cds_len
+        # if cds.seq_name in cds_lens:
+        #     if cds.annotation_id in cds_lens[cds.seq_name]:
+        #         cds_lens[cds.seq_name][cds.annotation_id] += cds_len
+        #     else:
+        #         cds_lens[cds.seq_name][cds.annotation_id] = cds_len
+        # else:
+        #     cds_lens[cds.seq_name] = {cds.annotation_id : cds_len}
+    return cds_lens
+
+def run_bedtools_basic(component, gff_1, gff_2, gff_out):
+    cmd = ["bedtools", component, "-a", gff_1, "-b", gff_2, ">" + gff_out]
+    subprocess.call(" ".join(cmd), shell=True)
 
 def read_phylip_matrix(file):
     res_matrix = None
