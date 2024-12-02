@@ -118,6 +118,7 @@ class MAF(Pangenome):
         return(MAF(filtered_blocks))
 
 class SyntenyBlock(SeqCollection):
+
     """
     represents synteny block as a set of sequences with an id
     from coords file
@@ -140,12 +141,6 @@ class SyntenyBlock(SeqCollection):
     # def get_contig_names(self):
     #     return set(self.seq_dict.keys())
         # return {seq.seq_name for seq in self.block_seqs}
-
-    # def MAF_repr(self, chr_names = None):
-    #     """
-    #     return a string representing block in MAF format
-    #     """
-    #     if self.aligned:
 
     #         maf_str = "a\n"
 
@@ -210,13 +205,10 @@ class MAFseq(BaseSeq):
     #     self.chr_size = chr_size
     #     self.seq = seq
 
+
     def __len__(self):
         return (self.end - self.start + 1)
     
-    # def MAF_repr(self):
-    #     """
-    #     returns string representing seguence in MAF format
-    #     """
         
     #     strand_sign = "+" if self.strand > 0 else "-"
 
