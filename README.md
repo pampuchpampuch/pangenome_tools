@@ -1,5 +1,5 @@
 # Pangenome models exploratory project
-Bioinformatic and data science project (recently started) with a goal of finding out how different pangenome models correspond to each other:
+Master thesis project with a goal of finding out how different pangenome models correspond to each other and how they could be improved:
 1. What are the similarities and differences
 2. Do they complement each other or contradict?
 3. Is joinded analysis possible and what insight could it bring?
