@@ -22,11 +22,17 @@ For now, models that are considered in the analysis are:
   4. Mapping sequences to GFF files (`Pangenome.map_to_GFF()`)
   5. Converting between different coordination systems (0 or 1 based start, half open or fully closed end) (`Pangenome.convert_coords_system()`)
   6. Constructing a cluster graph based on Panaroo criteria (`Pangenome.get_cluster_graph()`)
-  7. Work in progress approach: extracting triplets representing strukctural variants (`Pangenome.get_panaroo_cluster_triplets()`)
-  8. Writing to GFF (allows for incorporating BEDtools into analyses (`Pangenome.to_gff()`) - important note - in the last field of GFF record information about synteny block affiliation is saved, so infromation about general structure of original model is not lost.
+  7. Filtering MAF by mean gap content in columns (`MAF.filter_by_gap_content()`)
+  8. Work in progress: extracting triplets representing strukctural variants (`Pangenome.get_panaroo_cluster_triplets()`)
+  9. Writing to GFF (allows for incorporating BEDtools into analyses (`Pangenome.to_gff()`) - important note - in the last field of GFF record information about synteny block affiliation is saved, so infromation about general structure of original model is not lost.
   
   # Inputs preparation
   Some simple but usefull tools (most based on Panaroo input gff catalogs) include:
   1. Constructing gappy block with first posistions of all contigs in the dataset (can be used to trick _mafComparator_ to include sequences existing in only one of the fiels in the computed statistics) (`gff_to_all_scaffs_block.py`)
   2. Writing gff file representing all contigs in the datasets (`all_scaffs_to_gff.py`) - useful for comparing models to input data with _BEDtools_.
+ 
+  # Important scripts
+  1. `panaroo_to_maf.py` - allows for summarising Panaroo model as a MAF file
+  2. `panaroo_noncoding_clisters.maf` - writes MAF complementing Panaroo output (blocks represent homology of noncoding regions inbetweeen clusters).
+  3. `core_comparison.py` - detects and summarises core genome (for two maf files). Classifies proteins defined in input gff files as element of core or non-core genome based on homology represented in the MAF file. Recomended to compare Panaroo and non-panaroo mafs, as it is sensible to assume that Panaroo classification is most accurate.   
   
