@@ -3,10 +3,10 @@ from pgtools import gff_parser
 import os
 import subprocess
 
-def bedtools_clean_gff(contigs_gff_path, model_gff_path, out_dir="."):
+def bedtools_clean_gff(contigs_gff_path, model_gff_path, out_dir="model_clean.gff"):
     out_gff = os.path.join(out_dir, "not_in_model.gff")
     run_bedtools_basic("subtract", contigs_gff_path, model_gff_path, out_gff)
-    clean_gff = os.path.join(out_dir, "model_clean.gff")
+    clean_gff = out_dir
     run_bedtools_basic("subtract", contigs_gff_path, out_gff, clean_gff)
 
 

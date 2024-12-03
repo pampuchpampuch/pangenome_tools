@@ -336,3 +336,36 @@ def parse_joined_gff(gff_path, store_sequences=False):
     # if sequence:
     #     scaffolds_dict[fasta_id].seq = sequence
     return CDS
+
+def get_gff_sum_aggregate_lens(gff):
+    # cds_lens = {}
+    cds_lens = 0
+    gff = parse_joined_gff(gff)
+    for cds in gff:
+        cds_len = cds.end - cds.start + 1
+        cds_lens += cds_len
+        # if cds.seq_name in cds_lens:
+        #     if cds.annotation_id in cds_lens[cds.seq_name]:
+        #         cds_lens[cds.seq_name][cds.annotation_id] += cds_len
+        #     else:
+        #         cds_lens[cds.seq_name][cds.annotation_id] = cds_len
+        # else:
+        #     cds_lens[cds.seq_name] = {cds.annotation_id : cds_len}
+    return cds_lens
+
+def all_scaffs_to_gff(gffs, out_file):
+    res_gff = open(out_file, "w")
+    # gff_all = gff_parser.parse_GFFs_dir(gffs, gff_simple=False)
+    for genome, gff in gffs.items():
+        for scaff in gff.scaffolds:
+            # cont_n += 1
+            # cont_lens.append(scaff.length)
+            seq_name = f"{scaff.genome}.{scaff.name}"
+            start = 1
+            end = scaff.length
+            strand_sign = "+"
+            res_gff.write(f"{seq_name}\tunidentified\tunidentified\t{start}\t{end}\t.\t{strand_sign}\t0\tINFO=whole_scaffold\n")
+
+def all_contigs_gff(gff_dir, out_gff):
+    gffs = parse_GFFs_dir(gff_dir, gff_simple=False)
+    all_scaffs_to_gff(gffs, out_gff)
